@@ -37,7 +37,6 @@ class City(str, PyEnum):
     ABUJA = "abuja"
     LAGOS = "lagos"
     PORT_HARCOURT = "port_harcourt"
-    KANO = "kano"
 
 
 class Listing(Base):

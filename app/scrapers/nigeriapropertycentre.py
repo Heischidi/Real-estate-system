@@ -24,7 +24,6 @@ CITY_PATHS: dict[str, City] = {
     "abuja": City.ABUJA,
     "lagos": City.LAGOS,
     "portharcourt": City.PORT_HARCOURT,
-    "kano": City.KANO,
 }
 
 PROPERTY_TYPE_MAP: dict[str, PropertyType] = {

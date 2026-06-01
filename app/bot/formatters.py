@@ -18,7 +18,6 @@ CITY_DISPLAY: dict[str, str] = {
     "abuja": "Abuja",
     "lagos": "Lagos",
     "port_harcourt": "Port Harcourt",
-    "kano": "Kano",
 }
 
 
@@ -59,9 +58,9 @@ def format_listing_alert(listing: Listing) -> str:
     location_str = ""
     if listing.location:
         location_str = listing.location
-    city_display = CITY_DISPLAY.get(
-        listing.city.value if listing.city else "", ""
-    )
+    
+    city_val = listing.city.value if hasattr(listing.city, "value") else str(listing.city or "")
+    city_display = CITY_DISPLAY.get(city_val.lower() if city_val else "", "")
     if city_display and location_str:
         full_location = f"{location_str}, {city_display}"
     elif city_display:

@@ -27,7 +27,6 @@ class TestListingModel:
         assert City.ABUJA.value == "abuja"
         assert City.LAGOS.value == "lagos"
         assert City.PORT_HARCOURT.value == "port_harcourt"
-        assert City.KANO.value == "kano"
 
     def test_property_type_enum_values(self):
         assert PropertyType.APARTMENT.value == "apartment"

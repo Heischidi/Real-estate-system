@@ -8,7 +8,6 @@ CITIES = [
     ("🏛️ Abuja", "city:abuja"),
     ("🌊 Lagos", "city:lagos"),
     ("⚓ Port Harcourt", "city:port_harcourt"),
-    ("🌾 Kano", "city:kano"),
 ]
 
 PROPERTY_TYPES = [
@@ -66,5 +65,26 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
             [InlineKeyboardButton("⚙️ My Settings", callback_data="menu:settings")],
             [InlineKeyboardButton("🔕 Unsubscribe", callback_data="menu:unsubscribe")],
             [InlineKeyboardButton("🏙️ Available Cities", callback_data="menu:cities")],
+        ]
+    )
+
+
+def start_city_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard for selecting a city upon /start."""
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("🏛️ Abuja", callback_data="start_city:abuja")],
+            [InlineKeyboardButton("🌊 Lagos", callback_data="start_city:lagos")],
+            [InlineKeyboardButton("⚓ Port Harcourt", callback_data="start_city:port_harcourt")],
+        ]
+    )
+
+
+def after_listings_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard shown after displaying the 5 latest listings."""
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("🔔 Subscribe for Alerts", callback_data="menu:subscribe")],
+            [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
         ]
     )

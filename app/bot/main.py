@@ -14,7 +14,13 @@ from app.bot.handlers.settings import (
     settings_callback_handler,
     unsubscribe_handler,
 )
-from app.bot.handlers.start import cities_handler, help_handler, start_handler
+from app.bot.handlers.start import (
+    cities_handler,
+    help_handler,
+    start_handler,
+    start_city_callback_handler,
+    back_to_cities_callback_handler,
+)
 from app.bot.handlers.subscribe import build_subscribe_handler
 from app.config import get_settings
 from app.logging_config import get_logger, setup_logging
@@ -44,6 +50,12 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("unsubscribe", unsubscribe_handler))
 
     # Inline keyboard menu callbacks
+    app.add_handler(
+        CallbackQueryHandler(start_city_callback_handler, pattern="^start_city:")
+    )
+    app.add_handler(
+        CallbackQueryHandler(back_to_cities_callback_handler, pattern="^back_to_cities$")
+    )
     app.add_handler(
         CallbackQueryHandler(settings_callback_handler, pattern="^menu:settings$")
     )

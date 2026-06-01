@@ -69,14 +69,13 @@ def build_welcome(first_name: str) -> str:
         "a property matching your budget goes live \u2014 so you never miss a deal.\n\n"
         "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n"
         "\U0001f3d9\ufe0f  <b>Cities I cover</b>\n"
-        "   \U0001f4cd Abuja  \u2022  \U0001f4cd Lagos\n"
-        "   \U0001f4cd Port Harcourt  \u2022  \U0001f4cd Kano\n\n"
+        "   \U0001f4cd Abuja  \u2022  \U0001f4cd Lagos  \u2022  \U0001f4cd Port Harcourt\n\n"
         "\U0001f3e0  <b>Property types</b>\n"
         "   Apartments \u2022 Flats \u2022 Duplexes\n"
         "   Detached Houses \u2022 Terraces\n"
         "   Lands \u2022 Commercial\n"
         "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-        "\U0001f447 <b>What would you like to do?</b>"
+        "👇 <b>Select a city below to view the latest 5 listings:</b>"
     )
 
 HELP_TEXT = (
@@ -97,20 +96,48 @@ CITIES_TEXT = (
     "\U0001f5fa\ufe0f <b>Cities RealtorPal Monitors</b>\n\n"
     "\U0001f3db\ufe0f <b>Abuja</b> \u2014 Federal Capital Territory\n"
     "\U0001f30a <b>Lagos</b> \u2014 Nigeria\u2019s commercial & financial hub\n"
-    "\u2693 <b>Port Harcourt</b> \u2014 Rivers State capital & oil city\n"
-    "\U0001f33e <b>Kano</b> \u2014 Largest city in northern Nigeria\n\n"
+    "\u2693 <b>Port Harcourt</b> \u2014 Rivers State capital & oil city\n\n"
     "\U0001f4e1 <i>Sources: PropertyPro, Nigeria Property Centre,\n"
     "PrivateProperty & Property24</i>\n\n"
     "<i>More cities coming soon! Use /subscribe to get started.</i>"
 )
 
+MOCK_LISTINGS = {
+    "abuja": [
+        "🏢 <b>Luxury 4 Bedroom Terrace</b>\n\n📍 <b>Location:</b> Maitama, Abuja\n🏷️ <b>Type:</b> Terrace\n💰 <b>Price:</b> ₦350.0M\n🛏 <b>Bedrooms:</b> 4\n🚿 <b>Bathrooms:</b> 4\n\n🔗 <a href='https://example.com/maitama'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+        "🏠 <b>Modern 3 Bedroom Apartment</b>\n\n📍 <b>Location:</b> Wuye, Abuja\n🏷️ <b>Type:</b> Apartment\n💰 <b>Price:</b> ₦85.0M\n🛏 <b>Bedrooms:</b> 3\n🚿 <b>Bathrooms:</b> 3\n\n🔗 <a href='https://example.com/wuye'>View Listing</a>\n\n<i>📡 via Nigeria Property Centre</i>",
+        "🏘️ <b>5 Bedroom Detached Duplex</b>\n\n📍 <b>Location:</b> Gwarinpa, Abuja\n🏷️ <b>Type:</b> Duplex\n💰 <b>Price:</b> ₦180.0M\n🛏 <b>Bedrooms:</b> 5\n🚿 <b>Bathrooms:</b> 6\n\n🔗 <a href='https://example.com/gwarinpa'>View Listing</a>\n\n<i>📡 via PrivateProperty</i>",
+        "🏪 <b>Commercial Office Space</b>\n\n📍 <b>Location:</b> Wuse II, Abuja\n🏷️ <b>Type:</b> Commercial\n💰 <b>Price:</b> ₦12.0M/year\n🛏 <b>Bedrooms:</b> None\n🚿 <b>Bathrooms:</b> 2\n\n🔗 <a href='https://example.com/wuse2'>View Listing</a>\n\n<i>📡 via Property24</i>",
+        "🌍 <b>1000 sqm Serviced Plot</b>\n\n📍 <b>Location:</b> Guzape, Abuja\n🏷️ <b>Type:</b> Land\n💰 <b>Price:</b> ₦120.0M\n\n🔗 <a href='https://example.com/guzape'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+    ],
+    "lagos": [
+        "🏢 <b>3 Bedroom Flat in Lekki Phase 1</b>\n\n📍 <b>Location:</b> Lekki Phase 1, Lagos\n🏷️ <b>Type:</b> Flat\n💰 <b>Price:</b> ₦120.0M\n🛏 <b>Bedrooms:</b> 3\n🚿 <b>Bathrooms:</b> 3\n\n🔗 <a href='https://example.com/lekki'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+        "🏡 <b>Stunning 5 Bedroom Fully Detached House</b>\n\n📍 <b>Location:</b> Banana Island, Ikoyi, Lagos\n🏷️ <b>Type:</b> Detached House\n💰 <b>Price:</b> ₦1.2B\n🛏 <b>Bedrooms:</b> 5\n🚿 <b>Bathrooms:</b> 6\n\n🔗 <a href='https://example.com/ikoyi'>View Listing</a>\n\n<i>📡 via Nigeria Property Centre</i>",
+        "🏢 <b>Waterfront 2 Bedroom Apartment</b>\n\n📍 <b>Location:</b> Victoria Island, Lagos\n🏷️ <b>Type:</b> Apartment\n💰 <b>Price:</b> ₦180.0M\n🛏 <b>Bedrooms:</b> 2\n🚿 <b>Bathrooms:</b> 2\n\n🔗 <a href='https://example.com/vi'>View Listing</a>\n\n<i>📡 via PrivateProperty</i>",
+        "🏘️ <b>4 Bedroom Terraced Duplex</b>\n\n📍 <b>Location:</b> Ajah, Lagos\n🏷️ <b>Type:</b> Terrace\n💰 <b>Price:</b> ₦65.0M\n🛏 <b>Bedrooms:</b> 4\n🚿 <b>Bathrooms:</b> 4\n\n🔗 <a href='https://example.com/ajah'>View Listing</a>\n\n<i>📡 via Property24</i>",
+        "🏪 <b>Commercial Office Building</b>\n\n📍 <b>Location:</b> Ikeja, Lagos\n🏷️ <b>Type:</b> Commercial\n💰 <b>Price:</b> ₦450.0M\n\n🔗 <a href='https://example.com/ikeja'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+    ],
+    "port_harcourt": [
+        "🏘️ <b>4 Bedroom Duplex</b>\n\n📍 <b>Location:</b> Peter Odili Road, Port Harcourt\n🏷️ <b>Type:</b> Duplex\n💰 <b>Price:</b> ₦95.0M\n🛏 <b>Bedrooms:</b> 4\n🚿 <b>Bathrooms:</b> 4\n\n🔗 <a href='https://example.com/peterodili'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+        "🏢 <b>3 Bedroom Apartment</b>\n\n📍 <b>Location:</b> GRA Phase 2, Port Harcourt\n🏷️ <b>Type:</b> Apartment\n💰 <b>Price:</b> ₦60.0M\n🛏 <b>Bedrooms:</b> 3\n🚿 <b>Bathrooms:</b> 3\n\n🔗 <a href='https://example.com/gra2'>View Listing</a>\n\n<i>📡 via Nigeria Property Centre</i>",
+        "🌍 <b>Serviced Residential Land</b>\n\n📍 <b>Location:</b> Airport Road, Port Harcourt\n🏷️ <b>Type:</b> Land\n💰 <b>Price:</b> ₦15.0M\n\n🔗 <a href='https://example.com/airportrd'>View Listing</a>\n\n<i>📡 via PrivateProperty</i>",
+        "🏡 <b>5 Bedroom Detached House</b>\n\n📍 <b>Location:</b> Eliozu, Port Harcourt\n🏷️ <b>Type:</b> Detached House\n💰 <b>Price:</b> ₦110.0M\n🛏 <b>Bedrooms:</b> 5\n🚿 <b>Bathrooms:</b> 5\n\n🔗 <a href='https://example.com/eliozu'>View Listing</a>\n\n<i>📡 via Property24</i>",
+        "🏪 <b>Commercial Warehouse</b>\n\n📍 <b>Location:</b> Trans Amadi, Port Harcourt\n🏷️ <b>Type:</b> Commercial\n💰 <b>Price:</b> ₦25.0M/year\n\n🔗 <a href='https://example.com/transamadi'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+    ],
+}
+
 # ── Keyboards ─────────────────────────────────────────────────────────────────
-def main_menu() -> InlineKeyboardMarkup:
+def start_city_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🏛️ Abuja", callback_data="start_city:abuja")],
+        [InlineKeyboardButton("🌊 Lagos", callback_data="start_city:lagos")],
+        [InlineKeyboardButton("⚓ Port Harcourt", callback_data="start_city:port_harcourt")],
+    ])
+
+def after_listings_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("\U0001f514 Subscribe for Alerts", callback_data="menu:subscribe")],
-        [InlineKeyboardButton("\u2699\ufe0f My Settings",         callback_data="menu:settings")],
-        [InlineKeyboardButton("\U0001f515 Unsubscribe",           callback_data="menu:unsubscribe")],
-        [InlineKeyboardButton("\U0001f3d9\ufe0f Available Cities", callback_data="menu:cities")],
+        [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
     ])
 
 # ── Handlers ──────────────────────────────────────────────────────────────────
@@ -118,16 +145,43 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     name = (user.first_name or "there") if user else "there"
     log.info("User /start — name=%s id=%s", name, user.id if user else "?")
-    await update.message.reply_html(build_welcome(name), reply_markup=main_menu())
-
+    await update.message.reply_html(build_welcome(name), reply_markup=start_city_menu())
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_html(HELP_TEXT)
 
-
 async def cities_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_html(CITIES_TEXT)
 
+async def start_city_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    
+    city_code = (query.data or "").replace("start_city:", "")
+    city_name = city_code.replace("_", " ").title()
+    
+    await query.message.reply_html(f"🔍 <b>Fetching the latest 5 properties in {city_name}...</b>")
+    
+    listings = MOCK_LISTINGS.get(city_code, [])
+    for msg in listings:
+        await query.message.reply_html(msg, disable_web_page_preview=True)
+        
+    await query.message.reply_html(
+        f"💡 These are the 5 latest properties in <b>{city_name}</b>.\n"
+        "Would you like to set up automatic alerts for new ones?",
+        reply_markup=after_listings_menu()
+    )
+
+async def back_to_cities_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    user = update.effective_user
+    name = (user.first_name or "there") if user else "there"
+    await query.edit_message_text(
+        build_welcome(name),
+        reply_markup=start_city_menu(),
+        parse_mode="HTML"
+    )
 
 async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -169,6 +223,8 @@ def build_app() -> Application:
     app.add_handler(CommandHandler("start",    start))
     app.add_handler(CommandHandler("help",     help_cmd))
     app.add_handler(CommandHandler("cities",   cities_cmd))
+    app.add_handler(CallbackQueryHandler(start_city_callback, pattern="^start_city:"))
+    app.add_handler(CallbackQueryHandler(back_to_cities_callback, pattern="^back_to_cities$"))
     app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu:"))
     app.add_error_handler(error_handler)
 

@@ -27,7 +27,6 @@ CITY_SLUGS: dict[str, City] = {
     "abuja": City.ABUJA,
     "lagos": City.LAGOS,
     "port-harcourt": City.PORT_HARCOURT,
-    "kano": City.KANO,
 }
 
 PROPERTY_TYPE_MAP: dict[str, PropertyType] = {

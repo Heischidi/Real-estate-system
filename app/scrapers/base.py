@@ -84,7 +84,7 @@ class BaseScraper(ABC):
     @property
     def cities_to_scrape(self) -> list[str]:
         """City search terms — subclasses may override."""
-        return ["Abuja", "Lagos", "Port Harcourt", "Kano"]
+        return ["Abuja", "Lagos", "Port Harcourt"]
 
     @abstractmethod
     async def scrape(self) -> list[ListingData]:
