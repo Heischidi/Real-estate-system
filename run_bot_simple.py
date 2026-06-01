@@ -36,7 +36,7 @@ if env_file.exists():
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 if not BOT_TOKEN:
-    print("ERROR: TELEGRAM_BOT_TOKEN not found in .env")
+    print("ERROR: TELEGRAM_BOT_TOKEN not found in environment variables or .env file.")
     sys.exit(1)
 
 # ── Logging ───────────────────────────────────────────────────────────────────
