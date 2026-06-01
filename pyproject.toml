@@ -1,0 +1,82 @@
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.ruff_cache
+  | \.venv
+  | alembic/versions
+)/
+'''
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "S",   # flake8-bandit
+    "T20", # flake8-print
+    "RUF", # ruff-specific
+]
+ignore = [
+    "S101",  # assert statements (used in tests)
+    "S104",  # bind to all interfaces (needed for Docker)
+    "B008",  # function calls in default arguments (FastAPI Depends)
+    "S311",  # standard pseudo-random (not used for crypto)
+]
+unfixable = ["B"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S", "T20"]
+"alembic/**/*.py" = ["I"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = ["alembic/", "tests/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "-v",
+]
+markers = [
+    "unit: pure unit tests (no db, no network)",
+    "integration: tests requiring database",
+    "slow: tests that take >1s",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/tasks/celery_app.py", "alembic/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "pass",
+]
+fail_under = 80

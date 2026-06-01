@@ -1,0 +1,22 @@
+-r requirements.txt
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+httpx==0.28.1
+anyio==4.7.0
+aiosqlite==0.20.0
+fakeredis==2.26.2
+
+# Code Quality
+black==24.10.0
+ruff==0.8.3
+mypy==1.13.0
+types-python-dateutil==2.9.0.20241206
+types-pytz==2024.2.0.20241221
+
+# Dev Tools
+ipython==8.30.0
+watchfiles==1.0.3

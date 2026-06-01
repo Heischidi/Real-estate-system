@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Mypy
+.mypy_cache/
+*.pyi
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Playwright
+playwright-report/
+
+# Docker volumes
+postgres_data/
+redis_data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Alembic (don't ignore versions — commit those)
+# alembic/versions/ — keep this
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
