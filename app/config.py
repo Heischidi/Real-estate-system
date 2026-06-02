@@ -83,6 +83,7 @@ class Settings(BaseSettings):
     @classmethod
     def parse_database_url(cls, v: Any) -> Any:
         if isinstance(v, str):
+            v = v.strip()  # Remove accidental newlines/spaces from env injection
             if v.startswith("postgres://"):
                 v = v.replace("postgres://", "postgresql+asyncpg://", 1)
             elif v.startswith("postgresql://") and "+asyncpg" not in v:

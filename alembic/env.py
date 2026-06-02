@@ -24,7 +24,8 @@ if config.config_file_name is not None:
 
 # Load our actual DB URL from settings (overrides alembic.ini placeholder)
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# .strip() guards against accidental trailing newlines from env var injection (e.g. Railway)
+config.set_main_option("sqlalchemy.url", settings.database_url.strip())
 
 target_metadata = Base.metadata
 
