@@ -79,6 +79,16 @@ class Settings(BaseSettings):
             return [s.strip() for s in v.split(",") if s.strip()]
         return v or []
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def parse_database_url(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v.startswith("postgresql://") and "+asyncpg" not in v:
+                v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
     # -------------------------------------------------------------------------
     # Schedule
     # -------------------------------------------------------------------------
