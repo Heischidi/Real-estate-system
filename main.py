@@ -1,5 +1,6 @@
-# Dummy entry point to allow Railway's build driver (Railpack) to build the container successfully.
-# You can override the Start Command for each service inside the Railway settings panel.
+# Entry point for Railway / Railpack detection, exposing the real FastAPI application.
+from app.main import app
 
 if __name__ == "__main__":
-    print("RealtorPal Platform Build Success!")
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000)
