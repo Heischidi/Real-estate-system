@@ -28,6 +28,15 @@ from app.logging_config import get_logger, setup_logging
 log = get_logger(__name__)
 
 
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log error directly to stderr for clean visibility in Railway."""
+    import sys
+    import traceback
+    print("=== BOT EXCEPTION START ===", file=sys.stderr)
+    traceback.print_exception(None, context.error, context.error.__traceback__, file=sys.stderr)
+    print("=== BOT EXCEPTION END ===", file=sys.stderr)
+
+
 def build_application() -> Application:
     """Build the Telegram Application with all handlers registered."""
     settings = get_settings()
@@ -38,6 +47,9 @@ def build_application() -> Application:
         .token(settings.telegram_bot_token)
         .build()
     )
+
+    # Register error handler
+    app.add_error_handler(error_handler)
 
     # Subscription conversation (must be first — handles /subscribe and menu:subscribe)
     app.add_handler(build_subscribe_handler())
