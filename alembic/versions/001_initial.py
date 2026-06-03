@@ -14,27 +14,25 @@ depends_on = None
 
 def upgrade() -> None:
     # ---------------------------------------------------------------------------
-    # ENUM types
+    # ENUM types — created with IF NOT EXISTS to be idempotent on re-runs
     # ---------------------------------------------------------------------------
-    property_type_enum = postgresql.ENUM(
-        "apartment",
-        "flat",
-        "duplex",
-        "detached_house",
-        "terrace",
-        "land",
-        "commercial",
-        name="property_type_enum",
-    )
-    city_enum = postgresql.ENUM(
-        "abuja",
-        "lagos",
-        "port_harcourt",
-        "kano",
-        name="city_enum",
-    )
-    property_type_enum.create(op.get_bind())
-    city_enum.create(op.get_bind())
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE property_type_enum AS ENUM (
+                'apartment', 'flat', 'duplex', 'detached_house',
+                'terrace', 'land', 'commercial'
+            );
+        EXCEPTION WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE city_enum AS ENUM (
+                'abuja', 'lagos', 'port_harcourt', 'kano'
+            );
+        EXCEPTION WHEN duplicate_object THEN null;
+        END $$;
+    """)
 
     # ---------------------------------------------------------------------------
     # listings
