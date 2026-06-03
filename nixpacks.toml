@@ -1,6 +1,6 @@
 # Railway Railpack / Nixpacks build configuration
-# Tells Railway to install Playwright's Chromium browser binary at BUILD time
-# so it's baked into the image rather than downloaded on every container start.
+# Installs Playwright's Chromium browser + all OS-level system library dependencies
+# at BUILD time so they are baked into the image.
 
 [phases.build]
-cmds = ['playwright install chromium --with-deps']
+cmds = ['playwright install --with-deps chromium']
