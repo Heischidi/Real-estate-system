@@ -52,10 +52,7 @@ class TestFormatListingAlert:
             updated_at=datetime.now(tz=timezone.utc),
         )
         defaults.update(kwargs)
-        listing = Listing.__new__(Listing)
-        for k, v in defaults.items():
-            setattr(listing, k, v)
-        return listing
+        return Listing(**defaults)
 
     def test_contains_title(self):
         listing = self._make_listing()

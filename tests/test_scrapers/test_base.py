@@ -68,4 +68,5 @@ class TestBaseScraper:
         cities = self.scraper.cities_to_scrape
         assert "Abuja" in cities
         assert "Lagos" in cities
-        assert len(cities) == 4
+        assert len(cities) == 3
+

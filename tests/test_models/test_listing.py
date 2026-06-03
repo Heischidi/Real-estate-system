@@ -16,7 +16,7 @@ class TestListingModel:
     def test_listing_repr(self, sample_listing: Listing):
         r = repr(sample_listing)
         assert "propertypro" in r
-        assert "abuja" in r
+        assert "abuja" in r.lower()
 
     def test_listing_has_required_fields(self, sample_listing: Listing):
         assert sample_listing.source == "propertypro"

@@ -102,8 +102,11 @@ class NigeriaPropertyCentreScraper(BaseScraper):
         soup = BeautifulSoup(html, "lxml")
         listings: list[ListingData] = []
 
-        cards = soup.select("div.property-list article") or soup.select(
-            "div.col-sm-6.col-md-4"
+        # Try multiple selectors since layouts can differ or change
+        cards = (
+            soup.select("div.property-list div.wp-block.property")
+            or soup.select("div.property-list article")
+            or soup.select("div.col-sm-6.col-md-4")
         )
 
         for card in cards:
@@ -125,19 +128,36 @@ class NigeriaPropertyCentreScraper(BaseScraper):
         listing_url = self.normalize_url(self.base_url, href)
         source_id = listing_url.rstrip("/").split("/")[-1] or href.split("/")[-2]
 
-        title_tag = card.select_one("h4, h3, [class*='title']")
+        title_tag = card.select_one("h4.content-title, h4, h3, [class*='title']")
         title = title_tag.get_text(strip=True) if title_tag else "Property Listing"
 
-        price_tag = card.select_one("[class*='price'], strong")
-        price = self.parse_price(price_tag.get_text(strip=True) if price_tag else None)
+        # Robust price parsing from span.price tags
+        price = None
+        price_tags = card.select("span.price")
+        for p_tag in price_tags:
+            content = p_tag.get("content")
+            if content and content != "NGN":
+                price = self.parse_price(content)
+                break
+            txt = p_tag.get_text(strip=True)
+            if txt and txt != "₦" and any(c.isdigit() for c in txt):
+                price = self.parse_price(txt)
+                break
 
         loc_tag = card.select_one("[class*='location'], address, small")
         location = loc_tag.get_text(strip=True) if loc_tag else None
 
         property_type = self._infer_type(title)
 
-        bed_tag = card.find(string=lambda t: t and "bed" in t.lower())  # type: ignore[arg-type]
-        bath_tag = card.find(string=lambda t: t and "bath" in t.lower())  # type: ignore[arg-type]
+        # Parse bedrooms and bathrooms from aux-info list
+        bedrooms = None
+        bathrooms = None
+        for li in card.select("ul.aux-info li"):
+            text = li.get_text(strip=True).lower()
+            if "bedroom" in text:
+                bedrooms = self.parse_int(text)
+            elif "bathroom" in text:
+                bathrooms = self.parse_int(text)
 
         img_tag = card.select_one("img[src]")
         image_url = str(img_tag.get("src", "")) if img_tag else None
@@ -149,8 +169,8 @@ class NigeriaPropertyCentreScraper(BaseScraper):
             price=price,
             currency="NGN",
             property_type=property_type,
-            bedrooms=self.parse_int(bed_tag) if bed_tag else None,
-            bathrooms=self.parse_int(bath_tag) if bath_tag else None,
+            bedrooms=bedrooms,
+            bathrooms=bathrooms,
             location=location,
             city=city,
             state=city.value.replace("_", " ").title(),

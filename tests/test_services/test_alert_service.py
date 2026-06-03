@@ -28,10 +28,7 @@ class TestAlertMatching:
             created_at=datetime.now(tz=timezone.utc),
         )
         defaults.update(kwargs)
-        s = Subscriber.__new__(Subscriber)
-        for k, v in defaults.items():
-            setattr(s, k, v)
-        return s
+        return Subscriber(**defaults)
 
     def _matches(self, subscriber: Subscriber, listing_city: City | None,
                  price: int | None, prop_type: PropertyType | None) -> bool:

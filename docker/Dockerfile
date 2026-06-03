@@ -79,6 +79,6 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Default: run migrations then start FastAPI
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"]
+# Default: run migrations (non-fatal) then start FastAPI
+CMD ["sh", "-c", "alembic upgrade head || echo 'Migration failed or already up to date, continuing...' && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2"]
 

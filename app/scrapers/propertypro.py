@@ -112,7 +112,7 @@ class PropertyProScraper(BaseScraper):
         soup = BeautifulSoup(html, "lxml")
         listings: list[ListingData] = []
 
-        cards = soup.select("div.listings-property-item")
+        cards = soup.select("div.property-listing") or soup.select("div.listings-property-item")
         if not cards:
             # Try alternative selector structure
             cards = soup.select("div.single-room-sale")
@@ -142,30 +142,43 @@ class PropertyProScraper(BaseScraper):
             return None
 
         # Title
-        title_tag = card.select_one("h3, .listings-property-title, [class*='title']")
+        title_tag = card.select_one("div.pl-title h3 a, div.pl-title h3, h3, .listings-property-title, [class*='title']")
         title = title_tag.get_text(strip=True) if title_tag else "Property Listing"
 
         # Price
-        price_tag = card.select_one("[class*='price'], .listings-price")
+        price_tag = card.select_one("div.pl-price h3, [class*='price'], .listings-price")
         raw_price = price_tag.get_text(strip=True) if price_tag else None
         price = self.parse_price(raw_price)
 
         # Location
-        location_tag = card.select_one("[class*='location'], .listings-property-location")
+        location_tag = card.select_one("div.pl-title p, [class*='location'], .listings-property-location")
         location = location_tag.get_text(strip=True) if location_tag else None
 
         # Property type from title/tag
         property_type = self._infer_property_type(title)
 
         # Bedrooms / bathrooms
-        bed_tag = card.select_one("[class*='bed'], [class*='bedroom']")
-        bath_tag = card.select_one("[class*='bath'], [class*='bathroom']")
-        bedrooms = self.parse_int(bed_tag.get_text(strip=True) if bed_tag else None)
-        bathrooms = self.parse_int(bath_tag.get_text(strip=True) if bath_tag else None)
+        bedrooms = None
+        bathrooms = None
+        beds_baths_tag = card.select_one("div.pl-price h6")
+        if beds_baths_tag:
+            text = beds_baths_tag.get_text(strip=True).lower()
+            match_bed = re.search(r"(\d+)\s*bed", text)
+            if match_bed:
+                bedrooms = int(match_bed.group(1))
+            match_bath = re.search(r"(\d+)\s*bath", text)
+            if match_bath:
+                bathrooms = int(match_bath.group(1))
+        else:
+            # Fallback to old behavior
+            bed_tag = card.select_one("[class*='bed'], [class*='bedroom']")
+            bath_tag = card.select_one("[class*='bath'], [class*='bathroom']")
+            bedrooms = self.parse_int(bed_tag.get_text(strip=True) if bed_tag else None)
+            bathrooms = self.parse_int(bath_tag.get_text(strip=True) if bath_tag else None)
 
         # Image
-        img_tag = card.select_one("img[src]")
-        image_url = str(img_tag.get("src", "")) if img_tag else None
+        img_tag = card.select_one("img[data-src]") or card.select_one("img[src]")
+        image_url = str(img_tag.get("data-src", "")) or str(img_tag.get("src", "")) if img_tag else None
 
         return ListingData(
             source=self.name,
