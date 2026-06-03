@@ -11,10 +11,24 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
+# Pre-define enum types with create_type=False so op.create_table
+# never attempts to CREATE TYPE (we handle that explicitly below).
+_property_type_enum = postgresql.ENUM(
+    "apartment", "flat", "duplex", "detached_house",
+    "terrace", "land", "commercial",
+    name="property_type_enum",
+    create_type=False,
+)
+_city_enum = postgresql.ENUM(
+    "abuja", "lagos", "port_harcourt", "kano",
+    name="city_enum",
+    create_type=False,
+)
+
 
 def upgrade() -> None:
     # ---------------------------------------------------------------------------
-    # ENUM types — created with IF NOT EXISTS to be idempotent on re-runs
+    # ENUM types — idempotent: safe to re-run even if types already exist
     # ---------------------------------------------------------------------------
     op.execute("""
         DO $$ BEGIN
@@ -46,37 +60,12 @@ def upgrade() -> None:
         sa.Column("description", sa.Text, nullable=True),
         sa.Column("price", sa.BigInteger, nullable=True),
         sa.Column("currency", sa.String(10), nullable=False, server_default="NGN"),
-        sa.Column(
-            "property_type",
-            sa.Enum(
-                "apartment",
-                "flat",
-                "duplex",
-                "detached_house",
-                "terrace",
-                "land",
-                "commercial",
-                name="property_type_enum",
-                create_type=False,
-            ),
-            nullable=True,
-        ),
+        sa.Column("property_type", _property_type_enum, nullable=True),
         sa.Column("bedrooms", sa.Integer, nullable=True),
         sa.Column("bathrooms", sa.Integer, nullable=True),
         sa.Column("toilets", sa.Integer, nullable=True),
         sa.Column("location", sa.Text, nullable=True),
-        sa.Column(
-            "city",
-            sa.Enum(
-                "abuja",
-                "lagos",
-                "port_harcourt",
-                "kano",
-                name="city_enum",
-                create_type=False,
-            ),
-            nullable=True,
-        ),
+        sa.Column("city", _city_enum, nullable=True),
         sa.Column("state", sa.String(100), nullable=True),
         sa.Column("agent_name", sa.Text, nullable=True),
         sa.Column("agent_phone", sa.String(50), nullable=True),
@@ -111,35 +100,10 @@ def upgrade() -> None:
         sa.Column("telegram_id", sa.BigInteger, nullable=False, unique=True),
         sa.Column("username", sa.String(100), nullable=True),
         sa.Column("first_name", sa.String(100), nullable=False),
-        sa.Column(
-            "city",
-            sa.Enum(
-                "abuja",
-                "lagos",
-                "port_harcourt",
-                "kano",
-                name="city_enum",
-                create_type=False,
-            ),
-            nullable=True,
-        ),
+        sa.Column("city", _city_enum, nullable=True),
         sa.Column("min_price", sa.BigInteger, nullable=True),
         sa.Column("max_price", sa.BigInteger, nullable=True),
-        sa.Column(
-            "property_type",
-            sa.Enum(
-                "apartment",
-                "flat",
-                "duplex",
-                "detached_house",
-                "terrace",
-                "land",
-                "commercial",
-                name="property_type_enum",
-                create_type=False,
-            ),
-            nullable=True,
-        ),
+        sa.Column("property_type", _property_type_enum, nullable=True),
         sa.Column("active", sa.Boolean, nullable=False, server_default="true"),
         sa.Column(
             "created_at",
