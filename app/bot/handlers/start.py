@@ -77,6 +77,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def start_city_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle city selection from start page — queries last 5 listings."""
+    import asyncio
+
     query = update.callback_query
     await query.answer()
 
@@ -91,17 +93,22 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
     from app.services.listing_service import ListingService
     from app.bot.formatters import format_listing_alert
 
-    try:
+    async def _fetch() -> list:
         async with get_db_context() as db:
             service = ListingService(db)
             filters = ListingFilter(city=City(city_code), page=1, page_size=5)
             paginated = await service.list_listings(filters)
-            listings = paginated.items
+            return paginated.items
+
+    try:
+        # 20-second timeout so the bot never hangs silently
+        listings = await asyncio.wait_for(_fetch(), timeout=20.0)
 
         if not listings:
             await query.message.reply_html(
-                f"📭 No listings found for <b>{city_name}</b> yet.\n"
-                "Run the scraper workers to populate listings!",
+                f"📭 <b>No listings found for {city_name} yet.</b>\n\n"
+                "The scraper hasn't run yet. Listings will appear automatically "
+                "within the next 15 minutes once the worker processes the first scrape cycle.",
                 reply_markup=after_listings_keyboard()
             )
             return
@@ -113,6 +120,14 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
         await query.message.reply_html(
             f"💡 These are the 5 latest properties in <b>{city_name}</b>.\n"
             "Would you like to set up automatic alerts for new ones?",
+            reply_markup=after_listings_keyboard()
+        )
+
+    except asyncio.TimeoutError:
+        log.error("start_city_db_timeout", city=city_code)
+        await query.message.reply_html(
+            "⏱️ <b>Request timed out.</b>\n\n"
+            "The database is taking too long to respond. Please try again in a moment.",
             reply_markup=after_listings_keyboard()
         )
     except Exception as e:
