@@ -70,7 +70,7 @@ class ListingFilter(BaseModel):
     max_price: int | None = Field(default=None, ge=0)
     source: str | None = None
     page: int = Field(default=1, ge=1)
-    page_size: int = Field(default=20, ge=1, le=100)
+    page_size: int = Field(default=20, ge=1, le=1000)
 
 
 class PaginatedListings(BaseModel):
@@ -80,3 +80,47 @@ class PaginatedListings(BaseModel):
     page: int
     page_size: int
     items: list[ListingResponse]
+
+
+class ListingCreate(BaseModel):
+    """Schema for manual property listing creation."""
+
+    title: str = Field(..., min_length=3)
+    description: str | None = None
+    price: int | None = Field(default=None, ge=0)
+    currency: str = "NGN"
+    property_type: PropertyType
+    city: City
+    bedrooms: int | None = Field(default=None, ge=0)
+    bathrooms: int | None = Field(default=None, ge=0)
+    toilets: int | None = Field(default=None, ge=0)
+    location: str | None = None
+    state: str | None = None
+    agent_name: str | None = None
+    agent_phone: str | None = None
+    image_url: str | None = None
+    listing_url: str | None = None
+
+    model_config = {"use_enum_values": True}
+
+
+class ListingUpdate(BaseModel):
+    """Schema for manual property listing updates."""
+
+    title: str = Field(..., min_length=3)
+    description: str | None = None
+    price: int | None = Field(default=None, ge=0)
+    currency: str = "NGN"
+    property_type: PropertyType
+    city: City
+    bedrooms: int | None = Field(default=None, ge=0)
+    bathrooms: int | None = Field(default=None, ge=0)
+    toilets: int | None = Field(default=None, ge=0)
+    location: str | None = None
+    state: str | None = None
+    agent_name: str | None = None
+    agent_phone: str | None = None
+    image_url: str | None = None
+    listing_url: str | None = None
+
+    model_config = {"use_enum_values": True}

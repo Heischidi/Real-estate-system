@@ -104,9 +104,29 @@ def sample_subscriber() -> Subscriber:
 
 @pytest.fixture
 def mock_settings(monkeypatch: pytest.MonkeyPatch) -> Any:
-    """Override settings for tests."""
-    monkeypatch.setenv("SECRET_KEY", "test-secret-key-32-characters-long!")
-    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123456789:AABBCCDDEEFFaabbccddeeff_test_token")
-    monkeypatch.setenv("ADMIN_PASSWORD", "test-admin-password")
-    monkeypatch.setenv("JWT_SECRET_KEY", "test-jwt-secret-key-32-chars-long!")
-    return None
+    """Override settings for tests by mutating the cached Settings instance directly."""
+    from app.config import get_settings
+    settings = get_settings()
+    
+    # Store original values
+    orig_secret = settings.secret_key
+    orig_bot_token = settings.telegram_bot_token
+    orig_username = settings.admin_username
+    orig_password = settings.admin_password
+    orig_jwt_key = settings.jwt_secret_key
+    
+    # Mutate attributes on the active instance
+    settings.secret_key = "test-secret-key-32-characters-long!"
+    settings.telegram_bot_token = "123456789:AABBCCDDEEFFaabbccddeeff_test_token"
+    settings.admin_username = "admin"
+    settings.admin_password = "test-admin-password"
+    settings.jwt_secret_key = "test-jwt-secret-key-32-chars-long!"
+    
+    yield settings
+    
+    # Restore original values
+    settings.secret_key = orig_secret
+    settings.telegram_bot_token = orig_bot_token
+    settings.admin_username = orig_username
+    settings.admin_password = orig_password
+    settings.jwt_secret_key = orig_jwt_key

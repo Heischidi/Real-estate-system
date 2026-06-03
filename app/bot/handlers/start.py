@@ -28,7 +28,7 @@ def _build_welcome(first_name: str) -> str:
         "   Detached Houses • Terraces\n"
         "   Lands • Commercial\n"
         "━━━━━━━━━━━━━━━━\n\n"
-        "👇 <b>Select a city below to view the latest 5 listings:</b>"
+        "👇 <b>Select a city below to view available properties:</b>"
     )
 
 
@@ -77,7 +77,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def start_city_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle city selection from start page — queries last 5 listings."""
+    """Handle city selection from start page — queries all listings."""
     import asyncio
 
     query = update.callback_query
@@ -87,7 +87,7 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
     city_code = (query.data or "").replace("start_city:", "").lower()
     city_name = city_code.replace("_", " ").title()
 
-    await query.message.reply_html(f"🔍 <b>Fetching the latest 5 properties in {city_name}...</b>")
+    await query.message.reply_html(f"🔍 <b>Fetching properties in {city_name}...</b>")
 
     from app.database import get_db_context
     from app.models.listing import City
@@ -98,7 +98,7 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
     async def _fetch() -> list:
         async with get_db_context() as db:
             service = ListingService(db)
-            filters = ListingFilter(city=City(city_code), page=1, page_size=5)
+            filters = ListingFilter(city=City(city_code), page=1, page_size=1000)
             paginated = await service.list_listings(filters)
             return paginated.items
 
@@ -108,9 +108,8 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
 
         if not listings:
             await query.message.reply_html(
-                f"📭 <b>No listings found for {city_name} yet.</b>\n\n"
-                "The scraper hasn't run yet. Listings will appear automatically "
-                "within the next 15 minutes once the worker processes the first scrape cycle.",
+                f"📭 <b>No properties found for {city_name} yet.</b>\n\n"
+                "Properties will appear automatically once they are added by the admin.",
                 reply_markup=after_listings_keyboard()
             )
             return
@@ -120,7 +119,7 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
             await query.message.reply_html(msg, disable_web_page_preview=True)
 
         await query.message.reply_html(
-            f"💡 These are the 5 latest properties in <b>{city_name}</b>.\n"
+            f"💡 These are the properties available in <b>{city_name}</b>.\n"
             "Would you like to set up automatic alerts for new ones?",
             reply_markup=after_listings_keyboard()
         )

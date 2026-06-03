@@ -75,7 +75,7 @@ def build_welcome(first_name: str) -> str:
         "   Detached Houses \u2022 Terraces\n"
         "   Lands \u2022 Commercial\n"
         "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-        "👇 <b>Select a city below to view the latest 5 listings:</b>"
+        "👇 <b>Select a city below to view available properties:</b>"
     )
 
 HELP_TEXT = (
@@ -160,14 +160,42 @@ async def start_city_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
     city_code = (query.data or "").replace("start_city:", "")
     city_name = city_code.replace("_", " ").title()
     
-    await query.message.reply_html(f"🔍 <b>Fetching the latest 5 properties in {city_name}...</b>")
+    await query.message.reply_html(f"🔍 <b>Fetching properties in {city_name}...</b>")
     
-    listings = MOCK_LISTINGS.get(city_code, [])
+    listings = []
+    try:
+        from app.database import get_db_context
+        from app.models.listing import City as DBCity
+        from app.schemas.listing import ListingFilter
+        from app.services.listing_service import ListingService
+        from app.bot.formatters import format_listing_alert
+        
+        async def _fetch() -> list:
+            async with get_db_context() as db:
+                service = ListingService(db)
+                filters = ListingFilter(city=DBCity(city_code), page=1, page_size=1000)
+                paginated = await service.list_listings(filters)
+                return paginated.items
+                
+        listings_objs = await _fetch()
+        listings = [format_listing_alert(l) for l in listings_objs]
+    except Exception as e:
+        log.warning("Failed to fetch listings from database in run_bot_simple, falling back to mocks: %s", e)
+        listings = MOCK_LISTINGS.get(city_code, [])
+        
+    if not listings:
+        await query.message.reply_html(
+            f"📭 <b>No properties found for {city_name} yet.</b>\n\n"
+            "Properties will appear automatically once they are added by the admin.",
+            reply_markup=after_listings_menu()
+        )
+        return
+        
     for msg in listings:
         await query.message.reply_html(msg, disable_web_page_preview=True)
         
     await query.message.reply_html(
-        f"💡 These are the 5 latest properties in <b>{city_name}</b>.\n"
+        f"💡 These are the properties available in <b>{city_name}</b>.\n"
         "Would you like to set up automatic alerts for new ones?",
         reply_markup=after_listings_menu()
     )

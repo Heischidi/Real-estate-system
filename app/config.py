@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     # JWT / Admin Auth
     # -------------------------------------------------------------------------
-    admin_username: str = "admin"
-    admin_password: str = Field(..., min_length=8)
+    admin_username: str = "Realtorbot123%"
+    admin_password: str = Field(default="Twobadweebs", min_length=8)
     jwt_secret_key: str = Field(..., min_length=32)
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60

@@ -11,7 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.logging_config import get_logger
 from app.models.listing import City, Listing, PropertyType
-from app.schemas.listing import ListingData, ListingFilter, PaginatedListings
+from app.schemas.listing import (
+    ListingData,
+    ListingFilter,
+    PaginatedListings,
+    ListingCreate,
+    ListingUpdate,
+)
 
 log = get_logger(__name__)
 
@@ -126,3 +132,85 @@ class ListingService:
     async def total_count(self) -> int:
         stmt = select(func.count(Listing.id))
         return (await self.db.execute(stmt)).scalar_one()
+
+    async def create_manual_listing(self, data: ListingCreate) -> Listing:
+        """Create a property listing manually entered by admin."""
+        # Generate UUID for the listing
+        listing_id = uuid.uuid4()
+        
+        # Prepare values
+        values = data.model_dump()
+        
+        # Set manual fields
+        values["id"] = listing_id
+        values["source"] = "manual"
+        values["source_listing_id"] = listing_id.hex
+        
+        # Handle default listing URL if not provided
+        if not values.get("listing_url"):
+            phone = values.get("agent_phone")
+            if phone:
+                # Clean phone number (remove spaces, etc.)
+                clean_phone = "".join(c for c in phone if c.isdigit())
+                if clean_phone.startswith("0") and len(clean_phone) == 11:
+                    clean_phone = "234" + clean_phone[1:]
+                elif not clean_phone.startswith("234") and len(clean_phone) == 10:
+                    clean_phone = "234" + clean_phone
+                values["listing_url"] = f"https://wa.me/{clean_phone}"
+            else:
+                values["listing_url"] = "https://t.me/RealtorpalBot"
+                
+        listing = Listing(**values)
+        self.db.add(listing)
+        await self.db.commit()
+        await self.db.refresh(listing)
+        
+        log.info(
+            "manual_listing_created",
+            listing_id=str(listing.id),
+            city=listing.city,
+            title=listing.title
+        )
+        return listing
+
+    async def update_manual_listing(
+        self, listing_id: uuid.UUID, data: ListingUpdate
+    ) -> Listing | None:
+        """Update a manually created property listing."""
+        listing = await self.get_by_id(listing_id)
+        if not listing:
+            return None
+            
+        values = data.model_dump()
+        
+        # If listing_url is blank or not set, and was previously manual, we can update or preserve
+        if not values.get("listing_url"):
+            phone = values.get("agent_phone")
+            if phone:
+                clean_phone = "".join(c for c in phone if c.isdigit())
+                if clean_phone.startswith("0") and len(clean_phone) == 11:
+                    clean_phone = "234" + clean_phone[1:]
+                elif not clean_phone.startswith("234") and len(clean_phone) == 10:
+                    clean_phone = "234" + clean_phone
+                values["listing_url"] = f"https://wa.me/{clean_phone}"
+            else:
+                values["listing_url"] = "https://t.me/RealtorpalBot"
+                
+        for key, val in values.items():
+            setattr(listing, key, val)
+            
+        await self.db.commit()
+        await self.db.refresh(listing)
+        
+        log.info("manual_listing_updated", listing_id=str(listing.id))
+        return listing
+
+    async def delete_listing(self, listing_id: uuid.UUID) -> bool:
+        """Delete a listing by ID."""
+        listing = await self.get_by_id(listing_id)
+        if not listing:
+            return False
+        await self.db.delete(listing)
+        await self.db.commit()
+        log.info("listing_deleted", listing_id=str(listing_id))
+        return True
