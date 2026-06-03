@@ -1,6 +1,7 @@
 """Start and help command handlers for @RealtorpalBot."""
 
 from __future__ import annotations
+import html
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -82,7 +83,8 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
     query = update.callback_query
     await query.answer()
 
-    city_code = (query.data or "").replace("start_city:", "")
+    # .lower() guards against any stale uppercase callback data from old cached messages
+    city_code = (query.data or "").replace("start_city:", "").lower()
     city_name = city_code.replace("_", " ").title()
 
     await query.message.reply_html(f"🔍 <b>Fetching the latest 5 properties in {city_name}...</b>")
@@ -132,8 +134,10 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
         )
     except Exception as e:
         log.exception("error_fetching_start_listings")
+        # html.escape prevents Telegram BadRequest from raw exception strings like <class '...'>
         await query.message.reply_html(
-            f"❌ An error occurred while fetching properties: {e}",
+            f"❌ <b>An error occurred while fetching properties.</b>\n"
+            f"<code>{html.escape(str(e))}</code>",
             reply_markup=after_listings_keyboard()
         )
 
