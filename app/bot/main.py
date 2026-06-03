@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
+import sys
+import traceback
+
 from telegram import Update
+from telegram.error import Conflict
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
     CommandHandler,
+    ContextTypes,
 )
 
 from app.bot.handlers.settings import (
@@ -29,9 +35,11 @@ log = get_logger(__name__)
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Log error directly to stderr for clean visibility in Railway."""
-    import sys
-    import traceback
+    """Log errors; silently ignore Conflict (rolling-deploy overlap)."""
+    if isinstance(context.error, Conflict):
+        # Two instances briefly overlap during Railway rolling deploys — not an error
+        log.warning("bot_conflict_ignored", detail=str(context.error))
+        return
     print("=== BOT EXCEPTION START ===", file=sys.stderr)
     traceback.print_exception(None, context.error, context.error.__traceback__, file=sys.stderr)
     print("=== BOT EXCEPTION END ===", file=sys.stderr)
@@ -84,6 +92,9 @@ def build_application() -> Application:
 def main() -> None:
     """Run the bot with long-polling."""
     log.info("telegram_bot_starting")
+    # Small delay so Railway's old container can finish shutting down before we
+    # start polling — prevents the Conflict error on rolling deploys.
+    asyncio.get_event_loop().run_until_complete(asyncio.sleep(3))
     app = build_application()
     app.run_polling(
         allowed_updates=Update.ALL_TYPES,
@@ -93,3 +104,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
