@@ -35,12 +35,14 @@ class Subscriber(Base):
     username: Mapped[str | None] = mapped_column(String(100), nullable=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     city: Mapped[City | None] = mapped_column(
-        Enum(City, name="city_enum"), nullable=True
+        Enum(City, name="city_enum", values_callable=lambda e: [m.value for m in e]),
+        nullable=True,
     )
     min_price: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     max_price: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     property_type: Mapped[PropertyType | None] = mapped_column(
-        Enum(PropertyType, name="property_type_enum"), nullable=True
+        Enum(PropertyType, name="property_type_enum", values_callable=lambda e: [m.value for m in e]),
+        nullable=True,
     )
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

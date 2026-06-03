@@ -61,14 +61,17 @@ class Listing(Base):
     price: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     currency: Mapped[str] = mapped_column(String(10), default="NGN", nullable=False)
     property_type: Mapped[PropertyType | None] = mapped_column(
-        Enum(PropertyType, name="property_type_enum"), nullable=True
+        Enum(PropertyType, name="property_type_enum", values_callable=lambda e: [m.value for m in e]),
+        nullable=True,
     )
     bedrooms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     bathrooms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     toilets: Mapped[int | None] = mapped_column(Integer, nullable=True)
     location: Mapped[str | None] = mapped_column(Text, nullable=True)
     city: Mapped[City | None] = mapped_column(
-        Enum(City, name="city_enum"), nullable=True, index=True
+        Enum(City, name="city_enum", values_callable=lambda e: [m.value for m in e]),
+        nullable=True,
+        index=True,
     )
     state: Mapped[str | None] = mapped_column(String(100), nullable=True)
     agent_name: Mapped[str | None] = mapped_column(Text, nullable=True)
