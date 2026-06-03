@@ -74,8 +74,7 @@ class TestFormatListingAlert:
     def test_contains_view_link(self):
         listing = self._make_listing()
         msg = format_listing_alert(listing)
-        assert "View Listing" in msg
-        assert "propertypro.ng" in msg
+        assert "View Listing" not in msg
 
     def test_bedrooms_shown(self):
         listing = self._make_listing()

@@ -87,7 +87,6 @@ def format_listing_alert(listing: Listing) -> str:
         f"{bathrooms_str}"
         f"{toilets_str}"
         f"{agent_str}\n\n"
-        f"🔗 <a href='{listing.listing_url}'>View Listing</a>\n\n"
         f"<i>📡 via {listing.source.replace('_', ' ').title()}</i>"
     )
 
