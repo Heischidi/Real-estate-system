@@ -1,128 +1,2272 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Access Restricted</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RealtorPal — Admin Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-main: #0a0c10;
+            --bg-surface: rgba(22, 26, 38, 0.6);
+            --bg-surface-hover: rgba(29, 34, 50, 0.8);
+            --bg-modal: #121620;
+            
+            --color-primary: hsl(262, 83%, 64%);
+            --color-primary-hover: hsl(262, 83%, 58%);
+            --color-primary-glow: rgba(139, 92, 246, 0.35);
+            
+            --color-success: #10b981;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-disabled: #64748b;
+            
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-color-focus: rgba(139, 92, 246, 0.5);
+            
+            --transition-speed: 0.3s;
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Inter', sans-serif;
+        }
 
-    *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    html, body {
-      height: 100%;
-      width: 100%;
-      overflow: hidden;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #0a0a0f;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
+        /* --- Scrollbar --- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-primary);
+        }
 
-    /* Ambient background glow */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(180, 40, 40, 0.12) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(100, 20, 20, 0.08) 0%, transparent 60%);
-      pointer-events: none;
-      z-index: 0;
-    }
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .container {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      padding: 3rem 2rem;
-      max-width: 480px;
-      width: 100%;
-    }
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
 
-    /* Lock icon */
-    .icon-wrap {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 2rem;
-      border-radius: 50%;
-      background: rgba(200, 50, 50, 0.08);
-      border: 1px solid rgba(200, 50, 50, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: pulse 3s ease-in-out infinite;
-    }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
 
-    .icon-wrap svg {
-      width: 36px;
-      height: 36px;
-      color: #c84040;
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 1.8;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
+        /* --- Custom Toasts --- */
+        #toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(200, 50, 50, 0); }
-      50%       { box-shadow: 0 0 0 12px rgba(200, 50, 50, 0.06); }
-    }
+        .toast {
+            background: rgba(18, 22, 32, 0.9);
+            border-left: 4px solid var(--color-primary);
+            border-right: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
+            animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            backdrop-filter: blur(12px);
+        }
 
-    /* Divider line */
-    .divider {
-      width: 40px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(200, 50, 50, 0.5), transparent);
-      margin: 0 auto 2rem;
-    }
+        .toast.success { border-left-color: var(--color-success); }
+        .toast.error { border-left-color: var(--color-error); }
+        .toast.warning { border-left-color: var(--color-warning); }
 
-    h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #f0f0f0;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.75rem;
-      line-height: 1.2;
-    }
+        .toast i {
+            font-size: 1.25rem;
+        }
+        .toast.success i { color: var(--color-success); }
+        .toast.error i { color: var(--color-error); }
+        .toast.warning i { color: var(--color-warning); }
 
-    h1 span {
-      color: #c84040;
-    }
+        .toast-content {
+            flex-grow: 1;
+        }
+        .toast-title {
+            font-weight: 600;
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+        }
+        .toast-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
 
-    p {
-      font-size: 0.95rem;
-      font-weight: 300;
-      color: rgba(255, 255, 255, 0.35);
-      line-height: 1.6;
-    }
-  </style>
+        /* --- Login Screen --- */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(16px);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 440px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+            color: var(--color-primary);
+            text-shadow: 0 0 20px var(--color-primary-glow);
+            margin-bottom: 12px;
+        }
+
+        .logo-title {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.75rem;
+            letter-spacing: -0.025em;
+        }
+
+        .logo-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-disabled);
+            transition: color var(--transition-speed);
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 12px 14px 12px 42px;
+            background: rgba(10, 12, 16, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            transition: all var(--transition-speed);
+        }
+
+        .input-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-glow);
+        }
+
+        .input-control:focus + i {
+            color: var(--color-primary);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px 24px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            box-shadow: 0 4px 12px var(--color-primary-glow);
+        }
+
+        .btn:hover {
+            background: var(--color-primary-hover);
+            box-shadow: 0 6px 16px var(--color-primary-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn:disabled {
+            background: var(--text-disabled);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* --- Dashboard Layout --- */
+        #dashboard-container {
+            display: none;
+            min-height: 100vh;
+            grid-template-columns: 260px 1fr;
+        }
+
+        /* Sidebar */
+        aside {
+            background: rgba(13, 16, 23, 0.95);
+            border-right: 1px solid var(--border-color);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            backdrop-filter: blur(12px);
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            padding-left: 8px;
+        }
+
+        .brand-logo {
+            font-size: 1.75rem;
+            color: var(--color-primary);
+            text-shadow: 0 0 10px var(--color-primary-glow);
+        }
+
+        .brand-info h1 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.25rem;
+            line-height: 1.1;
+        }
+
+        .brand-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--color-success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--color-success);
+            animation: pulse 2s infinite;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .nav-item:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .nav-item.active {
+            color: white;
+            background: var(--color-primary);
+            box-shadow: 0 4px 12px var(--color-primary-glow);
+        }
+
+        .nav-item i {
+            width: 20px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        .user-info h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .user-info p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--color-error);
+            box-shadow: none;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+            border-color: var(--color-error);
+            box-shadow: none;
+        }
+
+        /* Main Content Container */
+        main {
+            padding: 40px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 36px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .page-title h2 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.75rem;
+        }
+
+        .page-title p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-action {
+            width: auto;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+        }
+
+        .dashboard-tab {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .dashboard-tab.active {
+            display: block;
+        }
+
+        /* --- Properties Tab --- */
+        .search-filter-bar {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            backdrop-filter: blur(12px);
+        }
+
+        .search-box {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-disabled);
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 14px 10px 40px;
+            background: rgba(10,12,16,0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            transition: all var(--transition-speed);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .filter-select {
+            padding: 10px 32px 10px 14px;
+            background: rgba(10,12,16,0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 14px;
+            min-width: 160px;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        /* Properties Grid */
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .property-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition-speed);
+            backdrop-filter: blur(12px);
+        }
+
+        .property-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 12px 30px -10px rgba(0,0,0,0.5);
+        }
+
+        .card-image-wrapper {
+            height: 180px;
+            position: relative;
+            background: rgba(255,255,255,0.02);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .property-card:hover .card-image-wrapper img {
+            transform: scale(1.05);
+        }
+
+        .image-fallback {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-disabled);
+        }
+
+        .image-fallback i {
+            font-size: 2.5rem;
+        }
+
+        .card-badges {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .card-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: var(--font-display);
+        }
+
+        .badge-source {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .badge-city {
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(4px);
+        }
+
+        .card-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-meta-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .card-type {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: capitalize;
+        }
+
+        .card-price {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text-main);
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.05rem;
+            line-height: 1.3;
+            margin-bottom: 12px;
+            height: 42px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-location {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .card-features {
+            display: flex;
+            gap: 16px;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 0;
+            margin-bottom: 16px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .feature-item i {
+            color: var(--color-primary);
+        }
+
+        .card-agent {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 16px;
+        }
+
+        .card-agent span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .btn-card {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn-edit {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        .btn-edit:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--text-muted);
+            box-shadow: none;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--color-error);
+            box-shadow: none;
+        }
+
+        .btn-delete:hover {
+            background: var(--color-error);
+            color: white;
+            border-color: var(--color-error);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--bg-surface);
+            border: 1px dashed var(--border-color);
+            border-radius: 16px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            color: var(--text-disabled);
+        }
+
+        .empty-state h3 {
+            font-family: var(--font-display);
+            color: white;
+            margin-bottom: 6px;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 36px;
+        }
+
+        .pagination-btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: white;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 10px var(--color-primary-glow);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* --- Subscribers Tab --- */
+        .table-wrapper {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 16px 24px;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.2);
+            font-family: var(--font-display);
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:not(:last-child) td {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr {
+            transition: background var(--transition-speed);
+        }
+
+        tr:hover td {
+            background: rgba(255,255,255,0.01);
+        }
+
+        .td-username {
+            font-weight: 600;
+            color: white;
+        }
+
+        .td-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .td-badge-city {
+            background: rgba(139, 92, 246, 0.15);
+            color: hsl(262, 83%, 75%);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .td-badge-type {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-badge.active { color: var(--color-success); }
+        .status-badge.inactive { color: var(--color-error); }
+
+        .status-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-badge.active::before {
+            background: var(--color-success);
+            box-shadow: 0 0 6px var(--color-success);
+        }
+
+        .status-badge.inactive::before {
+            background: var(--color-error);
+        }
+
+        /* --- Stats Tab --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 36px;
+        }
+
+        .stats-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            backdrop-filter: blur(12px);
+        }
+
+        .stats-icon-wrapper {
+            width: 54px;
+            height: 54px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--color-primary);
+            text-shadow: 0 0 10px var(--color-primary-glow);
+        }
+
+        .stats-card.green .stats-icon-wrapper {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+            color: var(--color-success);
+        }
+
+        .stats-card.yellow .stats-icon-wrapper {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+            color: var(--color-warning);
+        }
+
+        .stats-info h4 {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: var(--font-display);
+        }
+
+        .stats-info h2 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 2rem;
+            margin-top: 4px;
+        }
+
+        .stats-charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .chart-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+        }
+
+        .chart-box h3 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 24px;
+        }
+
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chart-bar-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .bar-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+
+        .bar-name {
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .bar-value {
+            color: var(--text-muted);
+        }
+
+        .bar-wrapper {
+            height: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: var(--color-primary);
+            border-radius: 4px;
+            width: 0;
+            transition: width 1s ease-out;
+            box-shadow: 0 0 10px var(--color-primary-glow);
+        }
+
+        .chart-bar-group:nth-child(even) .bar-fill {
+            background: #6366f1;
+        }
+
+        /* --- Modal Form --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(5, 7, 10, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-speed);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--bg-modal);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 640px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transform: scale(0.95);
+            transition: transform var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: color var(--transition-speed);
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+        }
+
+        .modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: white;
+            box-shadow: none;
+            width: auto;
+            padding: 10px 20px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            box-shadow: none;
+        }
+
+        .btn-submit {
+            width: auto;
+            padding: 10px 24px;
+        }
+
+        /* Custom spinner */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- Image Preview --- */
+        .image-preview-box {
+            height: 120px;
+            background: rgba(0,0,0,0.2);
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .image-preview-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .image-preview-placeholder {
+            color: var(--text-disabled);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="icon-wrap">
-      <svg viewBox="0 0 24 24">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-      </svg>
+
+    <div id="toast-container"></div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="logo-area">
+                <i class="fa-solid fa-house-circle-check logo-icon"></i>
+                <h1 class="logo-title">RealtorPal</h1>
+                <p class="logo-subtitle">Real Estate Admin Portal</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Admin Username</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="username" class="input-control" required placeholder="Enter username">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" class="input-control" required placeholder="Enter password">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="login-btn">
+                    <span>Log In</span>
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+            </form>
+        </div>
     </div>
 
-    <div class="divider"></div>
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboard-container">
+        <!-- SIDEBAR -->
+        <aside>
+            <div>
+                <div class="brand-header">
+                    <i class="fa-solid fa-laptop-code brand-logo"></i>
+                    <div class="brand-info">
+                        <h1>RealtorPal</h1>
+                        <div class="brand-status">
+                            <span class="status-dot"></span>
+                            <span>Admin Portal Active</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <ul class="nav-links">
+                    <li>
+                        <div class="nav-item active" data-tab="properties">
+                            <i class="fa-solid fa-building-user"></i>
+                            <span>Properties</span>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="nav-item" data-tab="subscribers">
+                            <i class="fa-solid fa-bell"></i>
+                            <span>Subscribers</span>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="nav-item" data-tab="stats">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Statistics</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
 
-    <h1>Free Trial <span>Ended</span></h1>
-    <p>This area is no longer accessible.</p>
-  </div>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="user-info">
+                        <h4 id="user-display">Administrator</h4>
+                        <p>Superadmin Role</p>
+                    </div>
+                </div>
+                <button class="btn logout-btn" id="logout-btn">
+                    <span>Sign Out</span>
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN VIEW -->
+        <main>
+            <!-- HEADER -->
+            <header>
+                <div class="page-title">
+                    <h2 id="tab-title">Properties</h2>
+                    <p id="tab-subtitle">Manage Nigerian property listings manually.</p>
+                </div>
+                <div class="header-actions" id="header-actions">
+                    <button class="btn btn-action" id="btn-add-property">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Property</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- PROPERTIES TAB -->
+            <div id="tab-properties" class="dashboard-tab active">
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="property-search" placeholder="Search by title, location or description...">
+                    </div>
+                    <select id="filter-city" class="filter-select">
+                        <option value="">All Cities</option>
+                        <option value="abuja">Abuja</option>
+                        <option value="lagos">Lagos</option>
+                        <option value="port_harcourt">Port Harcourt</option>
+                    </select>
+                    <select id="filter-type" class="filter-select">
+                        <option value="">All Types</option>
+                        <option value="apartment">Apartment</option>
+                        <option value="flat">Flat</option>
+                        <option value="duplex">Duplex</option>
+                        <option value="detached_house">Detached House</option>
+                        <option value="terrace">Terrace</option>
+                        <option value="land">Land</option>
+                        <option value="commercial">Commercial</option>
+                    </select>
+                </div>
+
+                <div class="properties-grid" id="properties-grid-list">
+                    <!-- Cards will be populated dynamically -->
+                </div>
+
+                <div class="pagination" id="properties-pagination">
+                    <!-- Pagination buttons -->
+                </div>
+            </div>
+
+            <!-- SUBSCRIBERS TAB -->
+            <div id="tab-subscribers" class="dashboard-tab">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Telegram User</th>
+                                <th>First Name</th>
+                                <th>Preferred City</th>
+                                <th>Property Type</th>
+                                <th>Price Range (Min / Max)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subscribers-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="subscribers-pagination"></div>
+            </div>
+
+            <!-- STATISTICS TAB -->
+            <div id="tab-stats" class="dashboard-tab">
+                <div class="stats-grid">
+                    <div class="stats-card">
+                        <div class="stats-icon-wrapper"><i class="fa-solid fa-city"></i></div>
+                        <div class="stats-info">
+                            <h4>Total Listings</h4>
+                            <h2 id="stat-total-listings">0</h2>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card green">
+                        <div class="stats-icon-wrapper"><i class="fa-solid fa-users"></i></div>
+                        <div class="stats-info">
+                            <h4>Subscribers</h4>
+                            <h2 id="stat-total-subscribers">0</h2>
+                        </div>
+                    </div>
+
+                    <div class="stats-card yellow">
+                        <div class="stats-icon-wrapper"><i class="fa-solid fa-paper-plane"></i></div>
+                        <div class="stats-info">
+                            <h4>Alerts Dispatched</h4>
+                            <h2 id="stat-total-alerts">0</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-charts-row">
+                    <div class="chart-box">
+                        <h3>Listings by City</h3>
+                        <div class="bar-chart" id="chart-cities">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="chart-box">
+                        <h3>Listings by Source</h3>
+                        <div class="bar-chart" id="chart-sources">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL FORM (ADD / EDIT PROPERTY) -->
+    <div class="modal-overlay" id="property-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title-text">Add New Property</h3>
+                <button class="modal-close" id="btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="property-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="prop-title">Property Title *</label>
+                        <input type="text" id="prop-title" class="input-control" style="padding-left: 14px;" required placeholder="e.g. Elegant 4 Bedroom Detached Duplex">
+                    </div>
+                    
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="prop-city">City *</label>
+                            <select id="prop-city" class="input-control filter-select" style="padding-left: 14px;" required>
+                                <option value="" disabled selected>Select city</option>
+                                <option value="abuja">Abuja</option>
+                                <option value="lagos">Lagos</option>
+                                <option value="port_harcourt">Port Harcourt</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-type">Property Type *</label>
+                            <select id="prop-type" class="input-control filter-select" style="padding-left: 14px;" required>
+                                <option value="" disabled selected>Select type</option>
+                                <option value="apartment">Apartment</option>
+                                <option value="flat">Flat</option>
+                                <option value="duplex">Duplex</option>
+                                <option value="detached_house">Detached House</option>
+                                <option value="terrace">Terrace</option>
+                                <option value="land">Land</option>
+                                <option value="commercial">Commercial</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="prop-location">Location / Neighborhood</label>
+                            <input type="text" id="prop-location" class="input-control" style="padding-left: 14px;" placeholder="e.g. Maitama, Ikeja">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-price">Price (NGN)</label>
+                            <input type="number" id="prop-price" class="input-control" style="padding-left: 14px;" placeholder="e.g. 150000000" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="prop-beds">Bedrooms</label>
+                            <input type="number" id="prop-beds" class="input-control" style="padding-left: 14px;" placeholder="Beds" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-baths">Bathrooms</label>
+                            <input type="number" id="prop-baths" class="input-control" style="padding-left: 14px;" placeholder="Baths" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-toilets">Toilets</label>
+                            <input type="number" id="prop-toilets" class="input-control" style="padding-left: 14px;" placeholder="Toilets" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prop-desc">Description</label>
+                        <textarea id="prop-desc" class="input-control" style="padding-left: 14px; min-height: 100px; resize: vertical;" placeholder="Provide details about the property..."></textarea>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="prop-agent-name">Agent Name</label>
+                            <input type="text" id="prop-agent-name" class="input-control" style="padding-left: 14px;" placeholder="e.g. Kingsley Properties">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-agent-phone">Agent Phone</label>
+                            <input type="text" id="prop-agent-phone" class="input-control" style="padding-left: 14px;" placeholder="e.g. 08012345678">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prop-image">Image URL</label>
+                        <input type="text" id="prop-image" class="input-control" style="padding-left: 14px;" placeholder="https://example.com/property-image.jpg">
+                        <div class="image-preview-box">
+                            <div class="image-preview-placeholder" id="preview-placeholder">
+                                <i class="fa-solid fa-image"></i>
+                                <span>Preview image will show here</span>
+                            </div>
+                            <img src="" alt="Property Image Preview" id="preview-img" style="display: none;">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prop-link">External URL (Optional)</label>
+                        <input type="text" id="prop-link" class="input-control" style="padding-left: 14px;" placeholder="https://example.com/listing-details">
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
+                    <button type="submit" class="btn btn-submit" id="btn-save-property">
+                        <span>Save Property</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- State Management ---
+        const state = {
+            token: localStorage.getItem('realtorpal_admin_token') || '',
+            activeTab: 'properties',
+            properties: [],
+            propertiesTotal: 0,
+            propertiesPage: 1,
+            propertiesPageSize: 9,
+            subscribers: [],
+            subscribersTotal: 0,
+            subscribersPage: 1,
+            subscribersPageSize: 10,
+            stats: null,
+            currentEditId: null
+        };
+
+        // --- DOM Elements ---
+        const el = {
+            loginScreen: document.getElementById('login-screen'),
+            dashboardContainer: document.getElementById('dashboard-container'),
+            loginForm: document.getElementById('login-form'),
+            usernameInput: document.getElementById('username'),
+            passwordInput: document.getElementById('password'),
+            loginBtn: document.getElementById('login-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
+            
+            navItems: document.querySelectorAll('.nav-item'),
+            tabTitle: document.getElementById('tab-title'),
+            tabSubtitle: document.getElementById('tab-subtitle'),
+            tabProperties: document.getElementById('tab-properties'),
+            tabSubscribers: document.getElementById('tab-subscribers'),
+            tabStats: document.getElementById('tab-stats'),
+            headerActions: document.getElementById('header-actions'),
+            btnAddProperty: document.getElementById('btn-add-property'),
+            
+            // Properties
+            propertiesGridList: document.getElementById('properties-grid-list'),
+            propertiesPagination: document.getElementById('properties-pagination'),
+            propertySearch: document.getElementById('property-search'),
+            filterCity: document.getElementById('filter-city'),
+            filterType: document.getElementById('filter-type'),
+            
+            // Subscribers
+            subscribersTableBody: document.getElementById('subscribers-table-body'),
+            subscribersPagination: document.getElementById('subscribers-pagination'),
+            
+            // Stats
+            statTotalListings: document.getElementById('stat-total-listings'),
+            statTotalSubscribers: document.getElementById('stat-total-subscribers'),
+            statTotalAlerts: document.getElementById('stat-total-alerts'),
+            chartCities: document.getElementById('chart-cities'),
+            chartSources: document.getElementById('chart-sources'),
+            
+            // Modal
+            propertyModal: document.getElementById('property-modal'),
+            propertyForm: document.getElementById('property-form'),
+            modalCloseBtn: document.getElementById('btn-close-modal'),
+            modalCancelBtn: document.getElementById('btn-cancel-modal'),
+            modalTitleText: document.getElementById('modal-title-text'),
+            
+            // Modal Fields
+            propTitle: document.getElementById('prop-title'),
+            propCity: document.getElementById('prop-city'),
+            propType: document.getElementById('prop-type'),
+            propLocation: document.getElementById('prop-location'),
+            propPrice: document.getElementById('prop-price'),
+            propBeds: document.getElementById('prop-beds'),
+            propBaths: document.getElementById('prop-baths'),
+            propToilets: document.getElementById('prop-toilets'),
+            propDesc: document.getElementById('prop-desc'),
+            propAgentName: document.getElementById('prop-agent-name'),
+            propAgentPhone: document.getElementById('prop-agent-phone'),
+            propImage: document.getElementById('prop-image'),
+            propLink: document.getElementById('prop-link'),
+            
+            previewImg: document.getElementById('preview-img'),
+            previewPlaceholder: document.getElementById('preview-placeholder'),
+            
+            toastContainer: document.getElementById('toast-container')
+        };
+
+        // --- Custom Notifications (Toast) ---
+        function showToast(title, desc = '', type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let iconClass = 'fa-circle-info';
+            if (type === 'success') iconClass = 'fa-circle-check';
+            if (type === 'error') iconClass = 'fa-triangle-exclamation';
+            if (type === 'warning') iconClass = 'fa-circle-exclamation';
+            
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass}"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    ${desc ? `<div class="toast-desc">${desc}</div>` : ''}
+                </div>
+            `;
+            
+            el.toastContainer.appendChild(toast);
+            
+            // Auto remove toast
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse forwards';
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 4000);
+        }
+
+        // --- Auth Operations ---
+        function checkAuth() {
+            if (state.token) {
+                el.loginScreen.style.display = 'none';
+                el.dashboardContainer.style.display = 'grid';
+                switchTab(state.activeTab);
+            } else {
+                el.loginScreen.style.display = 'flex';
+                el.dashboardContainer.style.display = 'none';
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = el.usernameInput.value.trim();
+            const password = el.passwordInput.value;
+            
+            el.loginBtn.disabled = true;
+            el.loginBtn.innerHTML = `<i class="fa-solid fa-spinner spinner"></i> Authenticating...`;
+            
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
+            
+            try {
+                const response = await fetch('/auth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Invalid username or password');
+                }
+                
+                const data = await response.json();
+                state.token = data.access_token;
+                localStorage.setItem('realtorpal_admin_token', state.token);
+                
+                showToast('Authentication Successful', 'Welcome back, Admin.', 'success');
+                checkAuth();
+            } catch (err) {
+                showToast('Login Failed', err.message, 'error');
+            } finally {
+                el.loginBtn.disabled = false;
+                el.loginBtn.innerHTML = `<span>Log In</span> <i class="fa-solid fa-right-to-bracket"></i>`;
+            }
+        }
+
+        function handleLogout() {
+            state.token = '';
+            localStorage.removeItem('realtorpal_admin_token');
+            showToast('Signed Out', 'You have successfully signed out.', 'success');
+            checkAuth();
+        }
+
+        // --- API Requests helper ---
+        async function apiRequest(url, options = {}) {
+            if (!state.token) return null;
+            
+            // Merge headers
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${state.token}`
+            };
+            
+            try {
+                const response = await fetch(url, options);
+                
+                if (response.status === 401) {
+                    handleLogout();
+                    throw new Error('Session expired. Please log in again.');
+                }
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    let errMsg = 'API error occurred';
+                    try {
+                        const json = JSON.parse(text);
+                        errMsg = json.detail || errMsg;
+                    } catch(_) {}
+                    throw new Error(errMsg);
+                }
+                
+                if (response.status === 240 || response.status === 204) {
+                    return true;
+                }
+                
+                return await response.json();
+            } catch (err) {
+                showToast('API Error', err.message, 'error');
+                throw err;
+            }
+        }
+
+        // --- Data Fetching ---
+        async function fetchProperties() {
+            const city = el.filterCity.value;
+            const type = el.filterType.value;
+            const search = el.propertySearch.value.trim();
+            const page = state.propertiesPage;
+            const pageSize = state.propertiesPageSize;
+            
+            let url = `/listings?page=${page}&page_size=${pageSize}`;
+            if (city) url += `&city=${city}`;
+            if (type) url += `&property_type=${type}`;
+            
+            try {
+                // listings API is public, but we call it
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                let items = data.items;
+                // Client side search text filter since FastAPI endpoint doesn't support query matching natively
+                if (search) {
+                    const cleanSearch = search.toLowerCase();
+                    items = items.filter(item => 
+                        item.title.toLowerCase().includes(cleanSearch) || 
+                        (item.description && item.description.toLowerCase().includes(cleanSearch)) || 
+                        (item.location && item.location.toLowerCase().includes(cleanSearch))
+                    );
+                }
+                
+                state.properties = items;
+                state.propertiesTotal = search ? items.length : data.total;
+                
+                renderProperties();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchSubscribers() {
+            try {
+                const data = await apiRequest(`/subscribers?page=${state.subscribersPage}&page_size=${state.subscribersPageSize}`);
+                if (data) {
+                    state.subscribers = data.items;
+                    state.subscribersTotal = data.total;
+                    renderSubscribers();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchStats() {
+            try {
+                const data = await apiRequest('/stats');
+                if (data) {
+                    state.stats = data;
+                    renderStats();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // --- Rendering Functions ---
+        function formatNaira(amount) {
+            if (amount === null || amount === undefined) return 'Price on request';
+            if (amount >= 1_000_000_000) return `₦${(amount / 1_000_000_000).toFixed(1)}B`;
+            if (amount >= 1_000_000) return `₦${(amount / 1_000_000).toFixed(1)}M`;
+            if (amount >= 1_000) return `₦${(amount / 1_000).toFixed(0)}K`;
+            return `₦${amount.toLocaleString()}`;
+        }
+
+        function renderProperties() {
+            el.propertiesGridList.innerHTML = '';
+            
+            if (state.properties.length === 0) {
+                el.propertiesGridList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-store-slash"></i>
+                        <h3>No properties found</h3>
+                        <p>Try resetting your filters or create a new property listing manually.</p>
+                    </div>
+                `;
+                el.propertiesPagination.innerHTML = '';
+                return;
+            }
+            
+            state.properties.forEach(prop => {
+                const card = document.createElement('div');
+                card.className = 'property-card';
+                
+                // Set image content or fallback
+                let imgHtml = `
+                    <div class="image-fallback">
+                        <i class="fa-solid fa-house-chimney"></i>
+                        <span>No image provided</span>
+                    </div>
+                `;
+                
+                if (prop.image_url) {
+                    imgHtml = `<img src="${prop.image_url}" alt="${prop.title}" onerror="this.outerHTML='<div class=&quot;image-fallback&quot;><i class=&quot;fa-solid fa-house-chimney&quot;></i><span>Image load failed</span></div>'">`;
+                }
+                
+                const displayType = prop.property_type ? prop.property_type.replace('_', ' ').toLowerCase() : 'Property';
+                const displayCity = prop.city ? prop.city.replace('_', ' ').toUpperCase() : 'N/A';
+                
+                card.innerHTML = `
+                    <div class="card-image-wrapper">
+                        ${imgHtml}
+                        <div class="card-badges">
+                            <span class="card-badge badge-source">${prop.source}</span>
+                            <span class="card-badge badge-city">${displayCity}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card-content">
+                        <div>
+                            <div class="card-meta-top">
+                                <span class="card-type">${displayType}</span>
+                                <span class="card-price">${formatNaira(prop.price)}</span>
+                            </div>
+                            <h3 class="card-title">${prop.title}</h3>
+                            <div class="card-location">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>${prop.location || 'N/A'}, ${displayCity}</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="card-features">
+                                <div class="feature-item">
+                                    <i class="fa-solid fa-bed"></i>
+                                    <span>${prop.bedrooms !== null ? prop.bedrooms : '-'} Bed</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fa-solid fa-shower"></i>
+                                    <span>${prop.bathrooms !== null ? prop.bathrooms : '-'} Bath</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fa-solid fa-restroom"></i>
+                                    <span>${prop.toilets !== null ? prop.toilets : '-'} Toilet</span>
+                                </div>
+                            </div>
+                            
+                            <div class="card-agent">
+                                <span><i class="fa-solid fa-user-tie"></i> <b>Agent:</b> ${prop.agent_name || 'N/A'}</span>
+                                <span><i class="fa-solid fa-phone"></i> <b>Phone:</b> ${prop.agent_phone || 'N/A'}</span>
+                            </div>
+                            
+                            <div class="card-actions">
+                                <button class="btn btn-card btn-edit" onclick="openEditModal('${prop.id}')">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </button>
+                                <button class="btn btn-card btn-delete" onclick="handleDeleteProperty('${prop.id}')">
+                                    <i class="fa-solid fa-trash-can"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                el.propertiesGridList.appendChild(card);
+            });
+            
+            renderPagination(
+                el.propertiesPagination,
+                state.propertiesPage,
+                Math.ceil(state.propertiesTotal / state.propertiesPageSize),
+                (newPage) => {
+                    state.propertiesPage = newPage;
+                    fetchProperties();
+                }
+            );
+        }
+
+        function renderSubscribers() {
+            el.subscribersTableBody.innerHTML = '';
+            
+            if (state.subscribers.length === 0) {
+                el.subscribersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                            No active subscribers found in database.
+                        </td>
+                    </tr>
+                `;
+                el.subscribersPagination.innerHTML = '';
+                return;
+            }
+            
+            state.subscribers.forEach(sub => {
+                const tr = document.createElement('tr');
+                
+                const cityPref = sub.city ? sub.city.replace('_', ' ') : 'Any';
+                const typePref = sub.property_type ? sub.property_type.replace('_', ' ') : 'Any';
+                const minPrice = sub.min_price ? formatNaira(sub.min_price) : '₦0';
+                const maxPrice = sub.max_price ? formatNaira(sub.max_price) : 'No Max';
+                
+                tr.innerHTML = `
+                    <td class="td-username">@${sub.username || 'User_' + sub.telegram_id}</td>
+                    <td>${sub.first_name}</td>
+                    <td><span class="td-badge td-badge-city">${cityPref}</span></td>
+                    <td><span class="td-badge td-badge-type">${typePref}</span></td>
+                    <td>${minPrice} — ${maxPrice}</td>
+                    <td>
+                        <span class="status-badge ${sub.active ? 'active' : 'inactive'}">
+                            ${sub.active ? 'Subscribed' : 'Inactive'}
+                        </span>
+                    </td>
+                `;
+                
+                el.subscribersTableBody.appendChild(tr);
+            });
+            
+            renderPagination(
+                el.subscribersPagination,
+                state.subscribersPage,
+                Math.ceil(state.subscribersTotal / state.subscribersPageSize),
+                (newPage) => {
+                    state.subscribersPage = newPage;
+                    fetchSubscribers();
+                }
+            );
+        }
+
+        function renderStats() {
+            if (!state.stats) return;
+            
+            el.statTotalListings.innerText = state.stats.listings.total.toLocaleString();
+            el.statTotalSubscribers.innerText = state.stats.subscribers.total.toLocaleString();
+            el.statTotalAlerts.innerText = state.stats.notifications.total.toLocaleString();
+            
+            // Render city chart
+            el.chartCities.innerHTML = '';
+            const bySource = state.stats.listings.by_source || {};
+            
+            // Compute city-based listing counts manually from current state listings or fallback values
+            const citiesCount = { abuja: 0, lagos: 0, port_harcourt: 0 };
+            
+            // We can count city totals on client side from what's in local store, or mock the percentages for view
+            state.properties.forEach(p => {
+                if (p.city && citiesCount[p.city] !== undefined) {
+                    citiesCount[p.city]++;
+                }
+            });
+            
+            // Make sure we have numbers to display even if page 1 is small
+            const abujaCount = citiesCount.abuja || 0;
+            const lagosCount = citiesCount.lagos || 0;
+            const phCount = citiesCount.port_harcourt || 0;
+            const maxVal = Math.max(abujaCount, lagosCount, phCount, 1);
+            
+            const cityData = [
+                { name: 'Abuja', count: abujaCount },
+                { name: 'Lagos', count: lagosCount },
+                { name: 'Port Harcourt', count: phCount }
+            ];
+            
+            cityData.forEach(item => {
+                const percentage = (item.count / maxVal) * 100;
+                const div = document.createElement('div');
+                div.className = 'chart-bar-group';
+                div.innerHTML = `
+                    <div class="bar-label-row">
+                        <span class="bar-name">${item.name}</span>
+                        <span class="bar-value">${item.count} properties</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar-fill" style="width: 0%"></div>
+                    </div>
+                `;
+                el.chartCities.appendChild(div);
+                
+                // Animate bars
+                setTimeout(() => {
+                    div.querySelector('.bar-fill').style.width = `${percentage}%`;
+                }, 50);
+            });
+            
+            // Render source chart
+            el.chartSources.innerHTML = '';
+            const sources = Object.entries(bySource).map(([name, count]) => ({ name, count }));
+            const maxSourceVal = Math.max(...sources.map(s => s.count), 1);
+            
+            if (sources.length === 0) {
+                el.chartSources.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">No source data available.</p>`;
+            } else {
+                sources.forEach(item => {
+                    const percentage = (item.count / maxSourceVal) * 100;
+                    const div = document.createElement('div');
+                    div.className = 'chart-bar-group';
+                    div.innerHTML = `
+                        <div class="bar-label-row">
+                            <span class="bar-name">${item.name}</span>
+                            <span class="bar-value">${item.count} properties</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill" style="width: 0%"></div>
+                        </div>
+                    `;
+                    el.chartSources.appendChild(div);
+                    
+                    // Animate bars
+                    setTimeout(() => {
+                        div.querySelector('.bar-fill').style.width = `${percentage}%`;
+                    }, 50);
+                });
+            }
+        }
+
+        function renderPagination(container, currentPage, totalPages, onPageChange) {
+            container.innerHTML = '';
+            if (totalPages <= 1) return;
+            
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => onPageChange(currentPage - 1);
+            
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => onPageChange(currentPage + 1);
+            
+            const info = document.createElement('span');
+            info.className = 'pagination-info';
+            info.innerText = `Page ${currentPage} of ${totalPages}`;
+            
+            container.appendChild(prevBtn);
+            container.appendChild(info);
+            container.appendChild(nextBtn);
+        }
+
+        // --- Tabs Navigation ---
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            
+            // Update sidebar nav items
+            el.navItems.forEach(item => {
+                if (item.dataset.tab === tabId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            
+            // Hide all tabs
+            el.tabProperties.classList.remove('active');
+            el.tabSubscribers.classList.remove('active');
+            el.tabStats.classList.remove('active');
+            
+            // Show selected tab, update titles, fetch data
+            if (tabId === 'properties') {
+                el.tabTitle.innerText = 'Properties';
+                el.tabSubtitle.innerText = 'Manage Nigerian property listings manually.';
+                el.tabProperties.classList.add('active');
+                el.headerActions.style.display = 'flex';
+                fetchProperties();
+            } else if (tabId === 'subscribers') {
+                el.tabTitle.innerText = 'Subscribers';
+                el.tabSubtitle.innerText = 'View Telegram users registered for property alerts.';
+                el.tabSubscribers.classList.add('active');
+                el.headerActions.style.display = 'none';
+                fetchSubscribers();
+            } else if (tabId === 'stats') {
+                el.tabTitle.innerText = 'Platform Statistics';
+                el.tabSubtitle.innerText = 'Monitor property counts, subscriber counts, and alert dispatch stats.';
+                el.tabStats.classList.add('active');
+                el.headerActions.style.display = 'none';
+                fetchStats();
+            }
+        }
+
+        // --- Modals & CRUD operations ---
+        function openPropertyModal(editMode = false) {
+            el.propertyForm.reset();
+            el.previewImg.style.display = 'none';
+            el.previewPlaceholder.style.display = 'flex';
+            
+            if (editMode) {
+                el.modalTitleText.innerText = 'Edit Property Listing';
+                el.propertyModal.classList.add('active');
+            } else {
+                state.currentEditId = null;
+                el.modalTitleText.innerText = 'Add New Property';
+                el.propertyModal.classList.add('active');
+            }
+        }
+
+        function closePropertyModal() {
+            el.propertyModal.classList.remove('active');
+        }
+
+        function openEditModal(propertyId) {
+            state.currentEditId = propertyId;
+            const prop = state.properties.find(p => p.id === propertyId);
+            
+            if (!prop) {
+                showToast('Edit Error', 'Could not locate listing details.', 'error');
+                return;
+            }
+            
+            // Populating fields
+            el.propTitle.value = prop.title || '';
+            el.propCity.value = prop.city || '';
+            el.propType.value = prop.property_type || '';
+            el.propLocation.value = prop.location || '';
+            el.propPrice.value = prop.price || '';
+            el.propBeds.value = prop.bedrooms !== null ? prop.bedrooms : '';
+            el.propBaths.value = prop.bathrooms !== null ? prop.bathrooms : '';
+            el.propToilets.value = prop.toilets !== null ? prop.toilets : '';
+            el.propDesc.value = prop.description || '';
+            el.propAgentName.value = prop.agent_name || '';
+            el.propAgentPhone.value = prop.agent_phone || '';
+            el.propImage.value = prop.image_url || '';
+            el.propLink.value = prop.listing_url || '';
+            
+            if (prop.image_url) {
+                el.previewImg.src = prop.image_url;
+                el.previewImg.style.display = 'block';
+                el.previewPlaceholder.style.display = 'none';
+            }
+            
+            openPropertyModal(true);
+        }
+
+        async function handleSaveProperty(e) {
+            e.preventDefault();
+            
+            const submitBtn = el.propertyForm.querySelector('.btn-submit');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner spinner"></i> Saving...`;
+            
+            const data = {
+                title: el.propTitle.value.trim(),
+                city: el.propCity.value,
+                property_type: el.propType.value,
+                location: el.propLocation.value.trim() || null,
+                price: el.propPrice.value ? parseInt(el.propPrice.value) : null,
+                bedrooms: el.propBeds.value ? parseInt(el.propBeds.value) : null,
+                bathrooms: el.propBaths.value ? parseInt(el.propBaths.value) : null,
+                toilets: el.propToilets.value ? parseInt(el.propToilets.value) : null,
+                description: el.propDesc.value.trim() || null,
+                agent_name: el.propAgentName.value.trim() || null,
+                agent_phone: el.propAgentPhone.value.trim() || null,
+                image_url: el.propImage.value.trim() || null,
+                listing_url: el.propLink.value.trim() || null
+            };
+            
+            try {
+                let result;
+                if (state.currentEditId) {
+                    // Update
+                    result = await apiRequest(`/listings/${state.currentEditId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (result) {
+                        showToast('Listing Updated', `Successfully updated "${data.title}"`, 'success');
+                    }
+                } else {
+                    // Create
+                    result = await apiRequest('/listings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (result) {
+                        showToast('Listing Saved', `Created manual property and dispatched alerts.`, 'success');
+                    }
+                }
+                
+                closePropertyModal();
+                fetchProperties();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `Save Property`;
+            }
+        }
+
+        async function handleDeleteProperty(propertyId) {
+            const prop = state.properties.find(p => p.id === propertyId);
+            if (!prop) return;
+            
+            if (!confirm(`Are you sure you want to delete "${prop.title}"?\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const success = await apiRequest(`/listings/${propertyId}`, {
+                    method: 'DELETE'
+                });
+                if (success) {
+                    showToast('Listing Deleted', `Successfully deleted "${prop.title}"`, 'success');
+                    fetchProperties();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // --- Event Listeners ---
+        function initEvents() {
+            el.loginForm.addEventListener('submit', handleLogin);
+            el.logoutBtn.addEventListener('click', handleLogout);
+            
+            // Tab switching
+            el.navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    switchTab(item.dataset.tab);
+                });
+            });
+            
+            // Modal events
+            el.btnAddProperty.addEventListener('click', () => openPropertyModal(false));
+            el.modalCloseBtn.addEventListener('click', closePropertyModal);
+            el.modalCancelBtn.addEventListener('click', closePropertyModal);
+            el.propertyForm.addEventListener('submit', handleSaveProperty);
+            
+            // Live image preview
+            el.propImage.addEventListener('input', (e) => {
+                const url = e.target.value.trim();
+                if (url) {
+                    el.previewImg.src = url;
+                    el.previewImg.style.display = 'block';
+                    el.previewPlaceholder.style.display = 'none';
+                } else {
+                    el.previewImg.style.display = 'none';
+                    el.previewPlaceholder.style.display = 'flex';
+                }
+            });
+            
+            // Property search and filters
+            let searchTimeout;
+            el.propertySearch.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    state.propertiesPage = 1;
+                    fetchProperties();
+                }, 300);
+            });
+            
+            el.filterCity.addEventListener('change', () => {
+                state.propertiesPage = 1;
+                fetchProperties();
+            });
+            
+            el.filterType.addEventListener('change', () => {
+                state.propertiesPage = 1;
+                fetchProperties();
+            });
+        }
+
+        // --- App Entry point ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initEvents();
+            checkAuth();
+        });
+    </script>
 </body>
 </html>
