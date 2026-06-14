@@ -61,9 +61,13 @@ def format_listing_alert(listing: Listing) -> str:
     
     city_val = listing.city.value if hasattr(listing.city, "value") else str(listing.city or "")
     city_display = CITY_DISPLAY.get(city_val.lower() if city_val else "", "")
-    if city_display and location_str:
+    # Only append city if it's not already present in the scraped location string
+    city_already_in_location = (
+        city_display and location_str and city_display.lower() in location_str.lower()
+    )
+    if city_display and location_str and not city_already_in_location:
         full_location = f"{location_str}, {city_display}"
-    elif city_display:
+    elif city_display and not location_str:
         full_location = city_display
     else:
         full_location = location_str or "Nigeria"
