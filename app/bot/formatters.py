@@ -20,6 +20,9 @@ CITY_DISPLAY: dict[str, str] = {
     "port_harcourt": "Port Harcourt",
 }
 
+# All city names that may appear in scraped location strings
+_ALL_CITY_NAMES = {"lagos", "abuja", "port harcourt", "portharcourt"}
+
 
 def format_price(price: int | None, currency: str = "NGN") -> str:
     """Format a price integer into human-readable Naira notation."""
@@ -61,11 +64,10 @@ def format_listing_alert(listing: Listing) -> str:
     
     city_val = listing.city.value if hasattr(listing.city, "value") else str(listing.city or "")
     city_display = CITY_DISPLAY.get(city_val.lower() if city_val else "", "")
-    # Only append city if it's not already present in the scraped location string
-    city_already_in_location = (
-        city_display and location_str and city_display.lower() in location_str.lower()
-    )
-    if city_display and location_str and not city_already_in_location:
+    # Don't append city if any known city name is already in the scraped location string
+    loc_lower = location_str.lower() if location_str else ""
+    location_has_city = any(c in loc_lower for c in _ALL_CITY_NAMES)
+    if city_display and location_str and not location_has_city:
         full_location = f"{location_str}, {city_display}"
     elif city_display and not location_str:
         full_location = city_display

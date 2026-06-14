@@ -26,6 +26,29 @@ CITY_PATHS: dict[str, City] = {
     "portharcourt": City.PORT_HARCOURT,
 }
 
+# Keywords found in scraped location strings → City enum
+LOCATION_CITY_KEYWORDS: list[tuple[str, City]] = [
+    ("abuja", City.ABUJA),
+    ("lagos", City.LAGOS),
+    ("port harcourt", City.PORT_HARCOURT),
+    ("portharcourt", City.PORT_HARCOURT),
+]
+
+
+def _infer_city_from_location(location: str | None, fallback: City) -> City:
+    """Return the City enum that matches a keyword in the location string.
+    
+    Falls back to `fallback` if no known city keyword is found.
+    This prevents cross-city contamination when a site returns out-of-city results.
+    """
+    if not location:
+        return fallback
+    loc_lower = location.lower()
+    for keyword, city_enum in LOCATION_CITY_KEYWORDS:
+        if keyword in loc_lower:
+            return city_enum
+    return fallback
+
 PROPERTY_TYPE_MAP: dict[str, PropertyType] = {
     "apartment": PropertyType.APARTMENT,
     "flat": PropertyType.FLAT,
@@ -162,6 +185,10 @@ class NigeriaPropertyCentreScraper(BaseScraper):
         img_tag = card.select_one("img[src]")
         image_url = str(img_tag.get("src", "")) if img_tag else None
 
+        # Override city with whatever the scraped location text actually says.
+        # The site can return Lagos properties when we request the Abuja page.
+        true_city = _infer_city_from_location(location, fallback=city)
+
         return ListingData(
             source=self.name,
             source_listing_id=source_id,
@@ -172,8 +199,8 @@ class NigeriaPropertyCentreScraper(BaseScraper):
             bedrooms=bedrooms,
             bathrooms=bathrooms,
             location=location,
-            city=city,
-            state=city.value.replace("_", " ").title(),
+            city=true_city,
+            state=true_city.value.replace("_", " ").title(),
             listing_url=listing_url,
             image_url=image_url,
         )
