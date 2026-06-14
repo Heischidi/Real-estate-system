@@ -25,6 +25,7 @@ from app.bot.handlers.start import (
     help_handler,
     start_handler,
     start_city_callback_handler,
+    load_more_callback_handler,
     back_to_cities_callback_handler,
 )
 from app.bot.handlers.subscribe import build_subscribe_handler
@@ -72,6 +73,9 @@ def build_application() -> Application:
     # Inline keyboard menu callbacks
     app.add_handler(
         CallbackQueryHandler(start_city_callback_handler, pattern="^start_city:")
+    )
+    app.add_handler(
+        CallbackQueryHandler(load_more_callback_handler, pattern="^load_more:")
     )
     app.add_handler(
         CallbackQueryHandler(back_to_cities_callback_handler, pattern="^back_to_cities$")

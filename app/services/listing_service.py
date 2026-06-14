@@ -78,6 +78,7 @@ class ListingService:
 
     async def list_listings(self, filters: ListingFilter) -> PaginatedListings:
         """Return paginated, filtered listings."""
+        from sqlalchemy import or_
         from app.schemas.listing import ListingResponse
 
         query = select(Listing)
@@ -92,6 +93,17 @@ class ListingService:
             query = query.where(Listing.price <= filters.max_price)
         if filters.source:
             query = query.where(Listing.source == filters.source)
+        # Secondary guard: if a location_keyword is provided, also require that
+        # the scraped location string actually contains that city name.
+        # This filters out stale DB rows that were tagged with the wrong city enum.
+        if getattr(filters, "location_keyword", None):
+            kw = filters.location_keyword.lower()
+            query = query.where(
+                or_(
+                    Listing.location == None,  # noqa: E711 — keep rows with no location
+                    func.lower(Listing.location).contains(kw),
+                )
+            )
 
         # Count total
         count_query = select(func.count()).select_from(query.subquery())

@@ -69,6 +69,7 @@ class ListingFilter(BaseModel):
     min_price: int | None = Field(default=None, ge=0)
     max_price: int | None = Field(default=None, ge=0)
     source: str | None = None
+    location_keyword: str | None = None  # secondary filter: city name must appear in location text
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=1000)
 

@@ -6,7 +6,7 @@ import html
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.bot.keyboards import start_city_keyboard, after_listings_keyboard
+from app.bot.keyboards import start_city_keyboard, after_listings_keyboard, load_more_keyboard
 from app.logging_config import get_logger
 
 log = get_logger(__name__)
@@ -77,17 +77,49 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def start_city_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle city selection from start page — queries all listings."""
-    import asyncio
-
+    """Handle city selection from start page — queries listings page 1."""
     query = update.callback_query
     await query.answer()
 
-    # .lower() guards against any stale uppercase callback data from old cached messages
     city_code = (query.data or "").replace("start_city:", "").lower()
-    city_name = city_code.replace("_", " ").title()
+    await _send_city_listings(query.message, city_code, page=1)
 
-    await query.message.reply_html(f"🔍 <b>Fetching properties in {city_name}...</b>")
+
+async def load_more_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle Load More button — sends the next page of listings."""
+    query = update.callback_query
+    await query.answer()
+
+    # callback_data format: load_more:{city_code}:{page}
+    parts = (query.data or "").split(":")
+    if len(parts) < 3:
+        return
+    city_code = parts[1]
+    try:
+        page = int(parts[2])
+    except ValueError:
+        return
+
+    await _send_city_listings(query.message, city_code, page=page)
+
+
+async def _send_city_listings(message: object, city_code: str, page: int) -> None:
+    """Fetch and send up to 10 listings for `city_code` at `page`."""
+    import asyncio
+    from telegram import Message
+
+    msg: Message = message  # type: ignore[assignment]
+
+    # Map city code → human-readable name and location keyword for the secondary filter
+    CITY_DISPLAY_NAMES = {
+        "abuja": ("Abuja", "abuja"),
+        "lagos": ("Lagos", "lagos"),
+        "port_harcourt": ("Port Harcourt", "port harcourt"),
+    }
+    city_name, location_kw = CITY_DISPLAY_NAMES.get(city_code, (city_code.replace("_", " ").title(), city_code))
+
+    if page == 1:
+        await msg.reply_html(f"🔍 <b>Fetching properties in {city_name}...</b>")
 
     from app.database import get_db_context
     from app.models.listing import City
@@ -95,49 +127,70 @@ async def start_city_callback_handler(update: Update, context: ContextTypes.DEFA
     from app.services.listing_service import ListingService
     from app.bot.formatters import format_listing_alert
 
-    async def _fetch() -> list:
+    PAGE_SIZE = 10
+
+    async def _fetch() -> object:
         async with get_db_context() as db:
             service = ListingService(db)
-            filters = ListingFilter(city=City(city_code), page=1, page_size=1000)
-            paginated = await service.list_listings(filters)
-            return paginated.items
+            filters = ListingFilter(
+                city=City(city_code),
+                location_keyword=location_kw,
+                page=page,
+                page_size=PAGE_SIZE,
+            )
+            return await service.list_listings(filters)
 
     try:
-        # 20-second timeout so the bot never hangs silently
-        listings = await asyncio.wait_for(_fetch(), timeout=20.0)
+        paginated = await asyncio.wait_for(_fetch(), timeout=20.0)
+        listings = paginated.items
+        total = paginated.total
+        has_more = (page * PAGE_SIZE) < total
 
         if not listings:
-            await query.message.reply_html(
-                f"📭 <b>No properties found for {city_name} yet.</b>\n\n"
-                "Properties will appear automatically once they are added by the admin.",
-                reply_markup=after_listings_keyboard()
-            )
+            if page == 1:
+                await msg.reply_html(
+                    f"📭 <b>No properties found for {city_name} yet.</b>\n\n"
+                    "Properties will appear automatically once they are added by the admin.",
+                    reply_markup=after_listings_keyboard(),
+                )
+            else:
+                await msg.reply_html(
+                    f"✅ <b>That's all the properties in {city_name}!</b>",
+                    reply_markup=after_listings_keyboard(),
+                )
             return
 
         for listing in listings:
-            msg = format_listing_alert(listing)
-            await query.message.reply_html(msg, disable_web_page_preview=True)
+            msg_text = format_listing_alert(listing)
+            await msg.reply_html(msg_text, disable_web_page_preview=True)
 
-        await query.message.reply_html(
-            f"💡 These are the properties available in <b>{city_name}</b>.\n"
-            "Would you like to set up automatic alerts for new ones?",
-            reply_markup=after_listings_keyboard()
-        )
+        shown_so_far = page * PAGE_SIZE
+        if has_more:
+            await msg.reply_html(
+                f"📄 <b>Showing {min(shown_so_far, total)} of {total} properties in {city_name}.</b>\n"
+                "Tap ⬇️ Load More to see the next 10.",
+                reply_markup=load_more_keyboard(city_code, page + 1),
+            )
+        else:
+            await msg.reply_html(
+                f"✅ <b>All {total} propert{'y' if total == 1 else 'ies'} in {city_name} shown.</b>\n"
+                "Would you like to set up automatic alerts for new ones?",
+                reply_markup=after_listings_keyboard(),
+            )
 
     except asyncio.TimeoutError:
-        log.error("start_city_db_timeout", city=city_code)
-        await query.message.reply_html(
+        log.error("start_city_db_timeout", city=city_code, page=page)
+        await msg.reply_html(
             "⏱️ <b>Request timed out.</b>\n\n"
             "The database is taking too long to respond. Please try again in a moment.",
-            reply_markup=after_listings_keyboard()
+            reply_markup=after_listings_keyboard(),
         )
     except Exception as e:
         log.exception("error_fetching_start_listings")
-        # html.escape prevents Telegram BadRequest from raw exception strings like <class '...'>
-        await query.message.reply_html(
+        await msg.reply_html(
             f"❌ <b>An error occurred while fetching properties.</b>\n"
             f"<code>{html.escape(str(e))}</code>",
-            reply_markup=after_listings_keyboard()
+            reply_markup=after_listings_keyboard(),
         )
 
 

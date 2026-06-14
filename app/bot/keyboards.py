@@ -81,9 +81,23 @@ def start_city_keyboard() -> InlineKeyboardMarkup:
 
 
 def after_listings_keyboard() -> InlineKeyboardMarkup:
-    """Keyboard shown after displaying the 5 latest listings."""
+    """Keyboard shown after displaying the last page of listings."""
     return InlineKeyboardMarkup(
         [
+            [InlineKeyboardButton("🔔 Subscribe for Alerts", callback_data="menu:subscribe")],
+            [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+        ]
+    )
+
+
+def load_more_keyboard(city_code: str, next_page: int) -> InlineKeyboardMarkup:
+    """Keyboard shown mid-listing to offer loading the next page."""
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton(
+                f"⬇️ Load More",
+                callback_data=f"load_more:{city_code}:{next_page}",
+            )],
             [InlineKeyboardButton("🔔 Subscribe for Alerts", callback_data="menu:subscribe")],
             [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
         ]
