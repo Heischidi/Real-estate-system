@@ -95,6 +95,7 @@ async def handle_payment_confirm(update: Update, context: ContextTypes.DEFAULT_T
                     amount=amount,
                 )
             )
+            await db.commit()
 
         await query.message.edit_text(
             "✅ *Payment Claim Submitted!*\n\n"
