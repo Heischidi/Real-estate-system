@@ -90,13 +90,35 @@ def after_listings_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def load_more_keyboard(city_code: str, next_page: int) -> InlineKeyboardMarkup:
-    """Keyboard shown mid-listing to offer loading the next page."""
+def rent_or_buy_keyboard(city_code: str) -> InlineKeyboardMarkup:
+    """Ask the user whether they want to rent or buy."""
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("🔑 Rent", callback_data=f"browse_purpose:{city_code}:rent"),
+                InlineKeyboardButton("🏠 Buy", callback_data=f"browse_purpose:{city_code}:sale"),
+            ],
+            [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+        ]
+    )
+
+
+def load_more_keyboard(
+    city_code: str,
+    next_page: int,
+    purpose: str = "",
+    max_budget: int = 0,
+) -> InlineKeyboardMarkup:
+    """Keyboard shown mid-listing to offer loading the next page.
+
+    Encodes purpose and budget into callback_data so the next page
+    request can reproduce the same filters.
+    """
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton(
-                f"⬇️ Load More",
-                callback_data=f"load_more:{city_code}:{next_page}",
+                "⬇️ Load More",
+                callback_data=f"load_more:{city_code}:{next_page}:{purpose}:{max_budget}",
             )],
             [InlineKeyboardButton("🔔 Subscribe for Alerts", callback_data="menu:subscribe")],
             [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],

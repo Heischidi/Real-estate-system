@@ -24,9 +24,9 @@ from app.bot.handlers.start import (
     cities_handler,
     help_handler,
     start_handler,
-    start_city_callback_handler,
     load_more_callback_handler,
     back_to_cities_callback_handler,
+    build_browse_handler,
 )
 from app.bot.handlers.subscribe import build_subscribe_handler
 from app.config import get_settings
@@ -63,6 +63,10 @@ def build_application() -> Application:
     # Subscription conversation (must be first — handles /subscribe and menu:subscribe)
     app.add_handler(build_subscribe_handler())
 
+    # Browse conversation: city → rent/buy → budget → listings
+    # Must be registered before the bare back_to_cities callback handler.
+    app.add_handler(build_browse_handler())
+
     # Basic commands
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("help", help_handler))
@@ -70,10 +74,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("mysettings", my_settings_handler))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe_handler))
 
-    # Inline keyboard menu callbacks
-    app.add_handler(
-        CallbackQueryHandler(start_city_callback_handler, pattern="^start_city:")
-    )
+    # Standalone callbacks (outside conversations)
     app.add_handler(
         CallbackQueryHandler(load_more_callback_handler, pattern="^load_more:")
     )

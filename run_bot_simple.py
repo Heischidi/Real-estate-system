@@ -57,8 +57,18 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
+    ConversationHandler,
+    MessageHandler,
+    filters,
 )
 from telegram.request import HTTPXRequest
+
+# ── Conversation states ───────────────────────────────────────────────────────
+BROWSE_PURPOSE, BROWSE_BUDGET = range(10, 12)
+
+_KEY_CITY    = "browse_city"
+_KEY_PURPOSE = "browse_purpose"
+_KEY_BUDGET  = "browse_budget"
 
 # ── Messages ──────────────────────────────────────────────────────────────────
 def build_welcome(first_name: str) -> str:
@@ -104,27 +114,75 @@ CITIES_TEXT = (
 
 MOCK_LISTINGS = {
     "abuja": [
-        "🏢 <b>Luxury 4 Bedroom Terrace</b>\n\n📍 <b>Location:</b> Maitama, Abuja\n🏷️ <b>Type:</b> Terrace\n💰 <b>Price:</b> ₦350.0M\n🛏 <b>Bedrooms:</b> 4\n🚿 <b>Bathrooms:</b> 4\n\n🔗 <a href='https://example.com/maitama'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
-        "🏠 <b>Modern 3 Bedroom Apartment</b>\n\n📍 <b>Location:</b> Wuye, Abuja\n🏷️ <b>Type:</b> Apartment\n💰 <b>Price:</b> ₦85.0M\n🛏 <b>Bedrooms:</b> 3\n🚿 <b>Bathrooms:</b> 3\n\n🔗 <a href='https://example.com/wuye'>View Listing</a>\n\n<i>📡 via Nigeria Property Centre</i>",
-        "🏘️ <b>5 Bedroom Detached Duplex</b>\n\n📍 <b>Location:</b> Gwarinpa, Abuja\n🏷️ <b>Type:</b> Duplex\n💰 <b>Price:</b> ₦180.0M\n🛏 <b>Bedrooms:</b> 5\n🚿 <b>Bathrooms:</b> 6\n\n🔗 <a href='https://example.com/gwarinpa'>View Listing</a>\n\n<i>📡 via PrivateProperty</i>",
-        "🏪 <b>Commercial Office Space</b>\n\n📍 <b>Location:</b> Wuse II, Abuja\n🏷️ <b>Type:</b> Commercial\n💰 <b>Price:</b> ₦12.0M/year\n🛏 <b>Bedrooms:</b> None\n🚿 <b>Bathrooms:</b> 2\n\n🔗 <a href='https://example.com/wuse2'>View Listing</a>\n\n<i>📡 via Property24</i>",
-        "🌍 <b>1000 sqm Serviced Plot</b>\n\n📍 <b>Location:</b> Guzape, Abuja\n🏷️ <b>Type:</b> Land\n💰 <b>Price:</b> ₦120.0M\n\n🔗 <a href='https://example.com/guzape'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+        {"title": "Luxury 4 Bedroom Terrace", "location": "Maitama, Abuja", "price": 350_000_000, "purpose": "sale", "type": "Terrace", "bedrooms": 4, "url": "https://example.com/maitama"},
+        {"title": "Modern 3 Bedroom Apartment", "location": "Wuye, Abuja", "price": 85_000_000, "purpose": "sale", "type": "Apartment", "bedrooms": 3, "url": "https://example.com/wuye"},
+        {"title": "5 Bedroom Detached Duplex", "location": "Gwarinpa, Abuja", "price": 180_000_000, "purpose": "sale", "type": "Duplex", "bedrooms": 5, "url": "https://example.com/gwarinpa"},
+        {"title": "3 Bedroom Flat For Rent", "location": "Garki, Abuja", "price": 2_500_000, "purpose": "rent", "type": "Flat", "bedrooms": 3, "url": "https://example.com/garki"},
+        {"title": "1 Bedroom Mini Flat", "location": "Kubwa, Abuja", "price": 800_000, "purpose": "rent", "type": "Flat", "bedrooms": 1, "url": "https://example.com/kubwa"},
     ],
     "lagos": [
-        "🏢 <b>3 Bedroom Flat in Lekki Phase 1</b>\n\n📍 <b>Location:</b> Lekki Phase 1, Lagos\n🏷️ <b>Type:</b> Flat\n💰 <b>Price:</b> ₦120.0M\n🛏 <b>Bedrooms:</b> 3\n🚿 <b>Bathrooms:</b> 3\n\n🔗 <a href='https://example.com/lekki'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
-        "🏡 <b>Stunning 5 Bedroom Fully Detached House</b>\n\n📍 <b>Location:</b> Banana Island, Ikoyi, Lagos\n🏷️ <b>Type:</b> Detached House\n💰 <b>Price:</b> ₦1.2B\n🛏 <b>Bedrooms:</b> 5\n🚿 <b>Bathrooms:</b> 6\n\n🔗 <a href='https://example.com/ikoyi'>View Listing</a>\n\n<i>📡 via Nigeria Property Centre</i>",
-        "🏢 <b>Waterfront 2 Bedroom Apartment</b>\n\n📍 <b>Location:</b> Victoria Island, Lagos\n🏷️ <b>Type:</b> Apartment\n💰 <b>Price:</b> ₦180.0M\n🛏 <b>Bedrooms:</b> 2\n🚿 <b>Bathrooms:</b> 2\n\n🔗 <a href='https://example.com/vi'>View Listing</a>\n\n<i>📡 via PrivateProperty</i>",
-        "🏘️ <b>4 Bedroom Terraced Duplex</b>\n\n📍 <b>Location:</b> Ajah, Lagos\n🏷️ <b>Type:</b> Terrace\n💰 <b>Price:</b> ₦65.0M\n🛏 <b>Bedrooms:</b> 4\n🚿 <b>Bathrooms:</b> 4\n\n🔗 <a href='https://example.com/ajah'>View Listing</a>\n\n<i>📡 via Property24</i>",
-        "🏪 <b>Commercial Office Building</b>\n\n📍 <b>Location:</b> Ikeja, Lagos\n🏷️ <b>Type:</b> Commercial\n💰 <b>Price:</b> ₦450.0M\n\n🔗 <a href='https://example.com/ikeja'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+        {"title": "3 Bedroom Flat in Lekki Phase 1", "location": "Lekki Phase 1, Lagos", "price": 120_000_000, "purpose": "sale", "type": "Flat", "bedrooms": 3, "url": "https://example.com/lekki"},
+        {"title": "5 Bedroom Fully Detached House", "location": "Banana Island, Ikoyi, Lagos", "price": 1_200_000_000, "purpose": "sale", "type": "Detached House", "bedrooms": 5, "url": "https://example.com/ikoyi"},
+        {"title": "2 Bedroom Apartment For Rent", "location": "Victoria Island, Lagos", "price": 3_500_000, "purpose": "rent", "type": "Apartment", "bedrooms": 2, "url": "https://example.com/vi"},
+        {"title": "4 Bedroom Terraced Duplex", "location": "Ajah, Lagos", "price": 65_000_000, "purpose": "sale", "type": "Terrace", "bedrooms": 4, "url": "https://example.com/ajah"},
     ],
     "port_harcourt": [
-        "🏘️ <b>4 Bedroom Duplex</b>\n\n📍 <b>Location:</b> Peter Odili Road, Port Harcourt\n🏷️ <b>Type:</b> Duplex\n💰 <b>Price:</b> ₦95.0M\n🛏 <b>Bedrooms:</b> 4\n🚿 <b>Bathrooms:</b> 4\n\n🔗 <a href='https://example.com/peterodili'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
-        "🏢 <b>3 Bedroom Apartment</b>\n\n📍 <b>Location:</b> GRA Phase 2, Port Harcourt\n🏷️ <b>Type:</b> Apartment\n💰 <b>Price:</b> ₦60.0M\n🛏 <b>Bedrooms:</b> 3\n🚿 <b>Bathrooms:</b> 3\n\n🔗 <a href='https://example.com/gra2'>View Listing</a>\n\n<i>📡 via Nigeria Property Centre</i>",
-        "🌍 <b>Serviced Residential Land</b>\n\n📍 <b>Location:</b> Airport Road, Port Harcourt\n🏷️ <b>Type:</b> Land\n💰 <b>Price:</b> ₦15.0M\n\n🔗 <a href='https://example.com/airportrd'>View Listing</a>\n\n<i>📡 via PrivateProperty</i>",
-        "🏡 <b>5 Bedroom Detached House</b>\n\n📍 <b>Location:</b> Eliozu, Port Harcourt\n🏷️ <b>Type:</b> Detached House\n💰 <b>Price:</b> ₦110.0M\n🛏 <b>Bedrooms:</b> 5\n🚿 <b>Bathrooms:</b> 5\n\n🔗 <a href='https://example.com/eliozu'>View Listing</a>\n\n<i>📡 via Property24</i>",
-        "🏪 <b>Commercial Warehouse</b>\n\n📍 <b>Location:</b> Trans Amadi, Port Harcourt\n🏷️ <b>Type:</b> Commercial\n💰 <b>Price:</b> ₦25.0M/year\n\n🔗 <a href='https://example.com/transamadi'>View Listing</a>\n\n<i>📡 via PropertyPro</i>",
+        {"title": "4 Bedroom Duplex", "location": "Peter Odili Road, Port Harcourt", "price": 95_000_000, "purpose": "sale", "type": "Duplex", "bedrooms": 4, "url": "https://example.com/peterodili"},
+        {"title": "3 Bedroom Apartment For Rent", "location": "GRA Phase 2, Port Harcourt", "price": 1_800_000, "purpose": "rent", "type": "Apartment", "bedrooms": 3, "url": "https://example.com/gra2"},
+        {"title": "Serviced Residential Land", "location": "Airport Road, Port Harcourt", "price": 15_000_000, "purpose": "sale", "type": "Land", "bedrooms": None, "url": "https://example.com/airportrd"},
+        {"title": "5 Bedroom Detached House", "location": "Eliozu, Port Harcourt", "price": 110_000_000, "purpose": "sale", "type": "Detached House", "bedrooms": 5, "url": "https://example.com/eliozu"},
     ],
 }
+
+CITY_DISPLAY = {
+    "abuja":         ("Abuja",         "abuja"),
+    "lagos":         ("Lagos",         "lagos"),
+    "port_harcourt": ("Port Harcourt", "port harcourt"),
+}
+
+
+def _fmt_price(p: int) -> str:
+    if p >= 1_000_000_000:
+        return f"₦{p/1_000_000_000:.2g}B"
+    if p >= 1_000_000:
+        return f"₦{p/1_000_000:.4g}M"
+    if p >= 1_000:
+        return f"₦{p/1_000:.4g}K"
+    return f"₦{p:,}"
+
+
+def _format_mock(listing: dict) -> str:
+    emoji = {"Apartment": "🏢", "Flat": "🏠", "Duplex": "🏘️",
+             "Detached House": "🏡", "Terrace": "🏢", "Land": "🌍",
+             "Commercial": "🏪"}.get(listing["type"], "🏠")
+    beds = f"\n🛏 <b>Bedrooms:</b> {listing['bedrooms']}" if listing.get("bedrooms") else ""
+    purpose_tag = " (For Rent)" if listing.get("purpose") == "rent" else " (For Sale)"
+    return (
+        f"{emoji} <b>{listing['title']}{purpose_tag}</b>\n\n"
+        f"📍 <b>Location:</b> {listing['location']}\n"
+        f"🏷️ <b>Type:</b> {listing['type']}\n"
+        f"💰 <b>Price:</b> {_fmt_price(listing['price'])}"
+        f"{beds}\n\n"
+        f"🔗 <a href='{listing['url']}'>View Listing</a>\n\n"
+        f"<i>📡 via PropertyPro (demo)</i>"
+    )
+
+
+def _parse_budget(text: str) -> int | None | int:
+    """Returns amount (int), None (no cap), or -1 (invalid)."""
+    text = text.strip().lower().replace(",", "").replace("₦", "")
+    if text in ("0", "skip", "no", "none", "any"):
+        return None
+    multiplier = 1
+    if text.endswith("m"):
+        multiplier = 1_000_000; text = text[:-1]
+    elif text.endswith("k"):
+        multiplier = 1_000; text = text[:-1]
+    try:
+        return int(float(text) * multiplier)
+    except (ValueError, OverflowError):
+        return -1
+
 
 # ── Keyboards ─────────────────────────────────────────────────────────────────
 def start_city_menu() -> InlineKeyboardMarkup:
@@ -134,11 +192,32 @@ def start_city_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("⚓ Port Harcourt", callback_data="start_city:port_harcourt")],
     ])
 
+
+def rent_or_buy_keyboard(city_code: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔑 Rent", callback_data=f"browse_purpose:{city_code}:rent"),
+            InlineKeyboardButton("🏠 Buy",  callback_data=f"browse_purpose:{city_code}:sale"),
+        ],
+        [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+    ])
+
+
 def after_listings_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("\U0001f514 Subscribe for Alerts", callback_data="menu:subscribe")],
         [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
     ])
+
+
+def load_more_menu(city_code: str, next_page: int, purpose: str, max_budget: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("⬇️ Load More",
+            callback_data=f"load_more:{city_code}:{next_page}:{purpose}:{max_budget}")],
+        [InlineKeyboardButton("\U0001f514 Subscribe for Alerts", callback_data="menu:subscribe")],
+        [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+    ])
+
 
 # ── Handlers ──────────────────────────────────────────────────────────────────
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -147,58 +226,91 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     log.info("User /start — name=%s id=%s", name, user.id if user else "?")
     await update.message.reply_html(build_welcome(name), reply_markup=start_city_menu())
 
+
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_html(HELP_TEXT)
+
 
 async def cities_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_html(CITIES_TEXT)
 
-async def start_city_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+
+# Step 1 — city selected
+async def start_city_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    
     city_code = (query.data or "").replace("start_city:", "")
-    city_name = city_code.replace("_", " ").title()
-    
-    await query.message.reply_html(f"🔍 <b>Fetching properties in {city_name}...</b>")
-    
-    listings = []
-    try:
-        from app.database import get_db_context
-        from app.models.listing import City as DBCity
-        from app.schemas.listing import ListingFilter
-        from app.services.listing_service import ListingService
-        from app.bot.formatters import format_listing_alert
-        
-        async def _fetch() -> list:
-            async with get_db_context() as db:
-                service = ListingService(db)
-                filters = ListingFilter(city=DBCity(city_code), page=1, page_size=1000)
-                paginated = await service.list_listings(filters)
-                return paginated.items
-                
-        listings_objs = await _fetch()
-        listings = [format_listing_alert(l) for l in listings_objs]
-    except Exception as e:
-        log.warning("Failed to fetch listings from database in run_bot_simple, falling back to mocks: %s", e)
-        listings = MOCK_LISTINGS.get(city_code, [])
-        
-    if not listings:
-        await query.message.reply_html(
-            f"📭 <b>No properties found for {city_name} yet.</b>\n\n"
-            "Properties will appear automatically once they are added by the admin.",
-            reply_markup=after_listings_menu()
-        )
-        return
-        
-    for msg in listings:
-        await query.message.reply_html(msg, disable_web_page_preview=True)
-        
+    context.user_data[_KEY_CITY] = city_code  # type: ignore[index]
+    city_name, _ = CITY_DISPLAY.get(city_code, (city_code.replace("_", " ").title(), city_code))
     await query.message.reply_html(
-        f"💡 These are the properties available in <b>{city_name}</b>.\n"
-        "Would you like to set up automatic alerts for new ones?",
-        reply_markup=after_listings_menu()
+        f"🏙️ <b>{city_name}</b> selected!\n\n"
+        "Are you looking to <b>Rent</b> or <b>Buy</b> a property?",
+        reply_markup=rent_or_buy_keyboard(city_code),
     )
+    return BROWSE_PURPOSE
+
+
+# Step 2 — rent or buy
+async def browse_purpose_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    parts = (query.data or "").split(":")
+    if len(parts) < 3:
+        return ConversationHandler.END
+    city_code = parts[1]
+    purpose   = parts[2]
+    context.user_data[_KEY_CITY]    = city_code  # type: ignore[index]
+    context.user_data[_KEY_PURPOSE] = purpose    # type: ignore[index]
+    label = "🔑 Rent" if purpose == "rent" else "🏠 Buy"
+    await query.message.reply_html(
+        f"{label} — got it!\n\n"
+        "💰 <b>What is your maximum budget?</b>\n\n"
+        "Enter an amount in Naira:\n"
+        "  • <code>3000000</code> for ₦3M\n"
+        "  • <code>3m</code> for ₦3M\n"
+        "  • <code>500k</code> for ₦500K\n\n"
+        "Type <code>0</code> or <code>skip</code> to see <b>all</b> properties with no budget cap."
+    )
+    return BROWSE_BUDGET
+
+
+# Step 3 — budget entered
+async def browse_budget_entered(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    text = update.message.text or ""
+    budget = _parse_budget(text)
+    if budget == -1:
+        await update.message.reply_html(
+            "⚠️ I didn't understand that amount. Please try again.\n"
+            "Examples: <code>3000000</code>, <code>3m</code>, <code>500k</code>, <code>0</code>"
+        )
+        return BROWSE_BUDGET
+    context.user_data[_KEY_BUDGET] = budget  # type: ignore[index]
+    city_code = context.user_data.get(_KEY_CITY, "")  # type: ignore[index]
+    purpose   = context.user_data.get(_KEY_PURPOSE, "")  # type: ignore[index]
+    await _send_listings(update.message, city_code, purpose, budget, page=1)
+    return ConversationHandler.END
+
+
+async def load_more_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    parts = (query.data or "").split(":")
+    if len(parts) < 3:
+        return
+    city_code = parts[1]
+    try:
+        page = int(parts[2])
+    except ValueError:
+        return
+    purpose    = parts[3] if len(parts) > 3 else ""
+    try:
+        max_budget: int | None = int(parts[4]) if len(parts) > 4 and parts[4] else None
+    except ValueError:
+        max_budget = None
+    if max_budget == 0:
+        max_budget = None
+    await _send_listings(query.message, city_code, purpose, max_budget, page=page)
+
 
 async def back_to_cities_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -210,6 +322,7 @@ async def back_to_cities_callback(update: Update, context: ContextTypes.DEFAULT_
         reply_markup=start_city_menu(),
         parse_mode="HTML"
     )
+
 
 async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -223,20 +336,133 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 
+async def _send_listings(
+    message: object,
+    city_code: str,
+    purpose: str,
+    max_budget: int | None,
+    page: int,
+) -> None:
+    """Fetch & send paginated listings with budget + purpose filter."""
+    from telegram import Message
+    msg: Message = message  # type: ignore[assignment]
+
+    city_name, location_kw = CITY_DISPLAY.get(
+        city_code, (city_code.replace("_", " ").title(), city_code)
+    )
+    purpose_label = "for rent" if purpose == "rent" else "for sale" if purpose == "sale" else ""
+    budget_label  = f" within {_fmt_price(max_budget)}" if max_budget else ""
+
+    PAGE_SIZE = 10
+
+    if page == 1:
+        summary = f"🔍 <b>Fetching properties in {city_name}"
+        if purpose_label:
+            summary += f" {purpose_label}"
+        summary += budget_label + "...</b>"
+        await msg.reply_html(summary)
+
+    # Try live database first
+    listings = []
+    total = 0
+    has_more = False
+    try:
+        from app.database import get_db_context
+        from app.models.listing import City as DBCity, ListingPurpose
+        from app.schemas.listing import ListingFilter
+        from app.services.listing_service import ListingService
+        from app.bot.formatters import format_listing_alert
+
+        async def _fetch() -> object:
+            async with get_db_context() as db:
+                service = ListingService(db)
+                purpose_enum = (
+                    ListingPurpose(purpose) if purpose in ("rent", "sale") else None
+                )
+                filt = ListingFilter(
+                    city=DBCity(city_code),
+                    location_keyword=location_kw,
+                    listing_purpose=purpose_enum,
+                    max_price=max_budget,
+                    page=page,
+                    page_size=PAGE_SIZE,
+                )
+                return await service.list_listings(filt)
+
+        paginated = await asyncio.wait_for(_fetch(), timeout=20.0)
+        listings  = [format_listing_alert(l) for l in paginated.items]
+        total     = paginated.total
+        has_more  = (page * PAGE_SIZE) < total
+
+    except Exception as e:
+        log.warning("DB unavailable, using mock listings: %s", e)
+        # Fall back to mock data with local filtering
+        raw = MOCK_LISTINGS.get(city_code, [])
+        filtered = [
+            l for l in raw
+            if (not purpose or l.get("purpose") == purpose or l.get("purpose") is None)
+            and (not max_budget or (l.get("price") is not None and l["price"] <= max_budget))
+        ]
+        start_idx = (page - 1) * PAGE_SIZE
+        end_idx   = start_idx + PAGE_SIZE
+        page_items = filtered[start_idx:end_idx]
+        listings   = [_format_mock(l) for l in page_items]
+        total      = len(filtered)
+        has_more   = end_idx < total
+
+    if not listings:
+        no_msg = f"📭 <b>No properties found in {city_name}"
+        if purpose_label:
+            no_msg += f" {purpose_label}"
+        no_msg += budget_label + ".</b>\n\n"
+        no_msg += (
+            "Try a higher budget or different city.\n"
+            "You can also 🔔 Subscribe to get notified when new ones arrive!"
+            if max_budget else
+            "Properties will appear once they are added."
+        )
+        await msg.reply_html(no_msg, reply_markup=after_listings_menu())
+        return
+
+    for m in listings:
+        await msg.reply_html(m, disable_web_page_preview=True)
+
+    shown = page * PAGE_SIZE
+    if has_more:
+        await msg.reply_html(
+            f"📄 <b>Showing {min(shown, total)} of {total} properties.</b>\n"
+            "Tap ⬇️ Load More to see the next 10.",
+            reply_markup=load_more_menu(city_code, page + 1, purpose, max_budget or 0),
+        )
+    else:
+        await msg.reply_html(
+            f"✅ <b>All {total} propert{'y' if total == 1 else 'ies'} shown.</b>\n"
+            "Would you like to set up automatic alerts for new ones?",
+            reply_markup=after_listings_menu(),
+        )
+
+
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     log.error("Bot error: %s", context.error)
 
 
+async def _cancel_browse(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data.pop(_KEY_CITY, None)    # type: ignore[union-attr]
+    context.user_data.pop(_KEY_PURPOSE, None) # type: ignore[union-attr]
+    context.user_data.pop(_KEY_BUDGET, None)  # type: ignore[union-attr]
+    await update.message.reply_html(
+        "❌ Browse cancelled. Use /start to begin again.",
+        reply_markup=start_city_menu(),
+    )
+    return ConversationHandler.END
+
+
 # ── Application builder ───────────────────────────────────────────────────────
 def build_app() -> Application:
-    # connect_timeout: time to establish connection (raise it for slow networks)
-    # read_timeout: MUST be higher than the long-poll timeout sent to Telegram (10s)
-    # Setting read_timeout=15 means: wait up to 15s for Telegram to respond
-    # Telegram's long-poll will respond immediately when a message arrives
     request = HTTPXRequest(
         connection_pool_size=8,
         connect_timeout=20.0,
-        read_timeout=15.0,   # ← slightly above the 10s long-poll timeout
+        read_timeout=15.0,
         write_timeout=10.0,
         pool_timeout=10.0,
     )
@@ -248,12 +474,37 @@ def build_app() -> Application:
         .build()
     )
 
-    app.add_handler(CommandHandler("start",    start))
-    app.add_handler(CommandHandler("help",     help_cmd))
-    app.add_handler(CommandHandler("cities",   cities_cmd))
-    app.add_handler(CallbackQueryHandler(start_city_callback, pattern="^start_city:"))
+    # Browse conversation: city → rent/buy → budget → listings
+    browse_conv = ConversationHandler(
+        entry_points=[
+            CallbackQueryHandler(start_city_callback, pattern="^start_city:"),
+        ],
+        states={
+            BROWSE_PURPOSE: [
+                CallbackQueryHandler(browse_purpose_callback, pattern="^browse_purpose:"),
+                CallbackQueryHandler(back_to_cities_callback, pattern="^back_to_cities$"),
+            ],
+            BROWSE_BUDGET: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, browse_budget_entered),
+            ],
+        },
+        fallbacks=[
+            CommandHandler("start",  start),
+            CommandHandler("cancel", _cancel_browse),
+        ],
+        allow_reentry=True,
+        per_user=True,
+        per_chat=True,
+        name="browse_flow",
+    )
+
+    app.add_handler(browse_conv)
+    app.add_handler(CommandHandler("start",   start))
+    app.add_handler(CommandHandler("help",    help_cmd))
+    app.add_handler(CommandHandler("cities",  cities_cmd))
+    app.add_handler(CallbackQueryHandler(load_more_callback,      pattern="^load_more:"))
     app.add_handler(CallbackQueryHandler(back_to_cities_callback, pattern="^back_to_cities$"))
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu:"))
+    app.add_handler(CallbackQueryHandler(menu_callback,           pattern="^menu:"))
     app.add_error_handler(error_handler)
 
     return app
@@ -266,7 +517,7 @@ def main() -> None:
     log.info("Token: %s...", BOT_TOKEN[:20])
     log.info("=" * 50)
 
-    backoff = 5  # seconds before retry after crash
+    backoff = 5
     attempts = 0
 
     while True:
@@ -274,16 +525,12 @@ def main() -> None:
         try:
             log.info("Connecting to Telegram (attempt #%d)...", attempts)
             app = build_app()
-            # poll_interval=0 → check for updates immediately after each response
-            # timeout=10       → Telegram holds connection up to 10s waiting for updates
-            #                    Messages arrive INSTANTLY during this 10s window
             app.run_polling(
                 allowed_updates=Update.ALL_TYPES,
                 drop_pending_updates=True,
                 poll_interval=0.0,
                 timeout=10,
             )
-            # If run_polling exits cleanly (Ctrl+C), stop retrying
             log.info("Bot stopped cleanly.")
             break
 
@@ -295,7 +542,7 @@ def main() -> None:
             log.error("Bot crashed: %s", exc)
             log.info("Restarting in %d seconds...", backoff)
             time.sleep(backoff)
-            backoff = min(backoff * 2, 60)  # exponential backoff, max 60s
+            backoff = min(backoff * 2, 60)
 
 
 if __name__ == "__main__":

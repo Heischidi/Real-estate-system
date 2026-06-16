@@ -87,10 +87,23 @@ class ListingService:
             query = query.where(Listing.city == filters.city)
         if filters.property_type:
             query = query.where(Listing.property_type == filters.property_type)
+        if filters.listing_purpose:
+            # Include listings that match the purpose OR have no purpose tagged (NULL)
+            # so existing untagged properties still appear in results.
+            query = query.where(
+                or_(
+                    Listing.listing_purpose == filters.listing_purpose,
+                    Listing.listing_purpose == None,  # noqa: E711
+                )
+            )
         if filters.min_price is not None:
             query = query.where(Listing.price >= filters.min_price)
         if filters.max_price is not None:
-            query = query.where(Listing.price <= filters.max_price)
+            # When a budget cap is active, hide listings with no price set
+            query = query.where(
+                Listing.price != None,  # noqa: E711
+                Listing.price <= filters.max_price,
+            )
         if filters.source:
             query = query.where(Listing.source == filters.source)
         # Secondary guard: if a location_keyword is provided, also require that

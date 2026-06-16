@@ -7,7 +7,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from app.models.listing import City, PropertyType
+from app.models.listing import City, ListingPurpose, PropertyType
 
 
 class ListingData(BaseModel):
@@ -26,6 +26,7 @@ class ListingData(BaseModel):
     location: str | None = None
     city: City | None = None
     state: str | None = None
+    listing_purpose: ListingPurpose | None = None
     agent_name: str | None = None
     agent_phone: str | None = None
     listing_url: str
@@ -51,6 +52,7 @@ class ListingResponse(BaseModel):
     location: str | None
     city: str | None
     state: str | None
+    listing_purpose: str | None
     agent_name: str | None
     agent_phone: str | None
     listing_url: str
@@ -66,6 +68,7 @@ class ListingFilter(BaseModel):
 
     city: City | None = None
     property_type: PropertyType | None = None
+    listing_purpose: ListingPurpose | None = None
     min_price: int | None = Field(default=None, ge=0)
     max_price: int | None = Field(default=None, ge=0)
     source: str | None = None
@@ -101,6 +104,7 @@ class ListingCreate(BaseModel):
     agent_phone: str | None = None
     image_url: str | None = None
     listing_url: str | None = None
+    listing_purpose: ListingPurpose | None = None
 
     model_config = {"use_enum_values": True}
 
@@ -123,5 +127,6 @@ class ListingUpdate(BaseModel):
     agent_phone: str | None = None
     image_url: str | None = None
     listing_url: str | None = None
+    listing_purpose: ListingPurpose | None = None
 
     model_config = {"use_enum_values": True}

@@ -33,6 +33,11 @@ class PropertyType(str, PyEnum):
     COMMERCIAL = "commercial"
 
 
+class ListingPurpose(str, PyEnum):
+    RENT = "rent"
+    SALE = "sale"
+
+
 class City(str, PyEnum):
     ABUJA = "abuja"
     LAGOS = "lagos"
@@ -49,6 +54,7 @@ class Listing(Base):
         Index("ix_listing_property_type", "property_type"),
         Index("ix_listing_price", "price"),
         Index("ix_listing_created_at", "created_at"),
+        Index("ix_listing_purpose", "listing_purpose"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -74,6 +80,11 @@ class Listing(Base):
         index=True,
     )
     state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    listing_purpose: Mapped[ListingPurpose | None] = mapped_column(
+        Enum(ListingPurpose, name="listing_purpose_enum", values_callable=lambda e: [m.value for m in e]),
+        nullable=True,
+        index=True,
+    )
     agent_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     agent_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     listing_url: Mapped[str] = mapped_column(Text, nullable=False)
