@@ -17,10 +17,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+import enum
 from app.database import Base
 from app.models.listing import City, PropertyType
 
-class SubscriptionTier(str, Enum):
+class SubscriptionTier(str, enum.Enum):
     FREE = "free"
     MONTHLY = "monthly"
     YEARLY = "yearly"
