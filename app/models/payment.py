@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
+import enum
 from sqlalchemy import (
     BigInteger,
     DateTime,
@@ -18,13 +19,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
 
-class PaymentPlan(str, Enum):
+class PaymentPlan(str, enum.Enum):
     MONTHLY = "monthly"
     YEARLY = "yearly"
     LIFETIME = "lifetime"
 
 
-class PaymentStatus(str, Enum):
+class PaymentStatus(str, enum.Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
