@@ -62,6 +62,7 @@ from telegram.ext import (
     filters,
 )
 from telegram.request import HTTPXRequest
+from app.bot.handlers.payment import payment_conv_handler
 
 # ── Conversation states ───────────────────────────────────────────────────────
 BROWSE_PURPOSE, BROWSE_BUDGET = range(10, 12)
@@ -302,6 +303,33 @@ async def load_more_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         page = int(parts[2])
     except ValueError:
         return
+        
+    if page > 1:
+        is_free = True
+        try:
+            from app.database import AsyncSessionLocal
+            from app.models.subscriber import SubscriptionTier
+            from app.services.subscriber_service import SubscriberService
+            
+            async with AsyncSessionLocal() as db:
+                sub_service = SubscriberService(db)
+                subscriber = await sub_service.get_by_telegram_id(update.effective_user.id)
+                if subscriber and subscriber.subscription_tier != SubscriptionTier.FREE:
+                    is_free = False
+        except Exception:
+            pass # allow in fallback mode if DB fails, or we could block. We'll block to be safe.
+            
+        if is_free:
+            keyboard = [[InlineKeyboardButton("💎 Upgrade to Premium", callback_data="trigger_payment")]]
+            await query.message.reply_text(
+                "🔒 *Premium Feature*\n\n"
+                "Free users are limited to 10 properties per search.\n"
+                "Upgrade to Premium to view unlimited properties!",
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return
+            
     purpose    = parts[3] if len(parts) > 3 else ""
     try:
         max_budget: int | None = int(parts[4]) if len(parts) > 4 and parts[4] else None
@@ -499,6 +527,7 @@ def build_app() -> Application:
     )
 
     app.add_handler(browse_conv)
+    app.add_handler(payment_conv_handler)
     app.add_handler(CommandHandler("start",   start))
     app.add_handler(CommandHandler("help",    help_cmd))
     app.add_handler(CommandHandler("cities",  cities_cmd))

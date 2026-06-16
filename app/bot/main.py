@@ -29,6 +29,7 @@ from app.bot.handlers.start import (
     build_browse_handler,
 )
 from app.bot.handlers.subscribe import build_subscribe_handler
+from app.bot.handlers.payment import payment_conv_handler
 from app.config import get_settings
 from app.logging_config import get_logger, setup_logging
 
@@ -66,6 +67,9 @@ def build_application() -> Application:
     # Browse conversation: city → rent/buy → budget → listings
     # Must be registered before the bare back_to_cities callback handler.
     app.add_handler(build_browse_handler())
+    
+    # Payment conversation
+    app.add_handler(payment_conv_handler)
 
     # Basic commands
     app.add_handler(CommandHandler("start", start_handler))

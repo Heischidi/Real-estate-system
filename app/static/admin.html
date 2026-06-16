@@ -1248,6 +1248,12 @@
                         </div>
                     </li>
                     <li>
+                        <div class="nav-item" data-tab="payments">
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span>Payments</span>
+                        </div>
+                    </li>
+                    <li>
                         <div class="nav-item" data-tab="stats">
                             <i class="fa-solid fa-chart-pie"></i>
                             <span>Statistics</span>
@@ -1341,6 +1347,28 @@
                     </table>
                 </div>
                 <div class="pagination" id="subscribers-pagination"></div>
+            </div>
+
+            <!-- PAYMENTS TAB -->
+            <div id="tab-payments" class="dashboard-tab">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User (ID)</th>
+                                <th>Plan</th>
+                                <th>Amount ($)</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="payments-pagination"></div>
             </div>
 
             <!-- STATISTICS TAB -->
@@ -1514,6 +1542,10 @@
             subscribersTotal: 0,
             subscribersPage: 1,
             subscribersPageSize: 10,
+            payments: [],
+            paymentsTotal: 0,
+            paymentsPage: 1,
+            paymentsPageSize: 10,
             stats: null,
             currentEditId: null
         };
@@ -1533,6 +1565,7 @@
             tabSubtitle: document.getElementById('tab-subtitle'),
             tabProperties: document.getElementById('tab-properties'),
             tabSubscribers: document.getElementById('tab-subscribers'),
+            tabPayments: document.getElementById('tab-payments'),
             tabStats: document.getElementById('tab-stats'),
             headerActions: document.getElementById('header-actions'),
             btnAddProperty: document.getElementById('btn-add-property'),
@@ -1547,6 +1580,10 @@
             // Subscribers
             subscribersTableBody: document.getElementById('subscribers-table-body'),
             subscribersPagination: document.getElementById('subscribers-pagination'),
+            
+            // Payments
+            paymentsTableBody: document.getElementById('payments-table-body'),
+            paymentsPagination: document.getElementById('payments-pagination'),
             
             // Stats
             statTotalListings: document.getElementById('stat-total-listings'),
@@ -1756,6 +1793,19 @@
             }
         }
 
+        async function fetchPayments() {
+            try {
+                const data = await apiRequest(`/payments?page=${state.paymentsPage}&page_size=${state.paymentsPageSize}&status=pending`);
+                if (data) {
+                    state.payments = data.items;
+                    state.paymentsTotal = data.total;
+                    renderPayments();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
         async function fetchStats() {
             try {
                 const data = await apiRequest('/stats');
@@ -1930,6 +1980,78 @@
             );
         }
 
+        function renderPayments() {
+            el.paymentsTableBody.innerHTML = '';
+            
+            if (state.payments.length === 0) {
+                el.paymentsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                            No pending payments found.
+                        </td>
+                    </tr>
+                `;
+                el.paymentsPagination.innerHTML = '';
+                return;
+            }
+            
+            state.payments.forEach(payment => {
+                const tr = document.createElement('tr');
+                const dateStr = new Date(payment.created_at).toLocaleDateString();
+                const userDisplay = payment.username ? `@${payment.username}` : (payment.first_name || \`User_\${payment.telegram_id}\`);
+                
+                tr.innerHTML = `
+                    <td class="td-username">\${userDisplay}<br><small style="color: var(--text-muted);">\${payment.telegram_id}</small></td>
+                    <td><span class="td-badge td-badge-type">\${payment.plan.toUpperCase()}</span></td>
+                    <td><strong>$\${payment.amount}</strong></td>
+                    <td>\${dateStr}</td>
+                    <td>
+                        <span class="status-badge \${payment.status === 'pending' ? 'inactive' : 'active'}">
+                            \${payment.status.toUpperCase()}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-card" style="padding: 6px 12px; background: rgba(16, 185, 129, 0.1); color: var(--color-success); border: 1px solid rgba(16, 185, 129, 0.2);" onclick="handlePaymentAction('\${payment.id}', 'approve')">
+                                <i class="fa-solid fa-check"></i> Approve
+                            </button>
+                            <button class="btn btn-card" style="padding: 6px 12px; background: rgba(239, 68, 68, 0.1); color: var(--color-error); border: 1px solid rgba(239, 68, 68, 0.2);" onclick="handlePaymentAction('\${payment.id}', 'reject')">
+                                <i class="fa-solid fa-xmark"></i> Reject
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                el.paymentsTableBody.appendChild(tr);
+            });
+            
+            renderPagination(
+                el.paymentsPagination,
+                state.paymentsPage,
+                Math.ceil(state.paymentsTotal / state.paymentsPageSize),
+                (newPage) => {
+                    state.paymentsPage = newPage;
+                    fetchPayments();
+                }
+            );
+        }
+
+        async function handlePaymentAction(paymentId, action) {
+            if (!confirm(`Are you sure you want to ${action} this payment?`)) return;
+            
+            try {
+                const success = await apiRequest(`/payments/${paymentId}/${action}`, {
+                    method: 'POST'
+                });
+                if (success) {
+                    showToast('Payment Updated', `Payment successfully ${action}d.`, 'success');
+                    fetchPayments();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
         function renderStats() {
             if (!state.stats) return;
             
@@ -2056,6 +2178,7 @@
             // Hide all tabs
             el.tabProperties.classList.remove('active');
             el.tabSubscribers.classList.remove('active');
+            el.tabPayments.classList.remove('active');
             el.tabStats.classList.remove('active');
             
             // Show selected tab, update titles, fetch data
@@ -2071,6 +2194,12 @@
                 el.tabSubscribers.classList.add('active');
                 el.headerActions.style.display = 'none';
                 fetchSubscribers();
+            } else if (tabId === 'payments') {
+                el.tabTitle.innerText = 'Payments';
+                el.tabSubtitle.innerText = 'Review and approve pending manual payment claims.';
+                el.tabPayments.classList.add('active');
+                el.headerActions.style.display = 'none';
+                fetchPayments();
             } else if (tabId === 'stats') {
                 el.tabTitle.innerText = 'Platform Statistics';
                 el.tabSubtitle.innerText = 'Monitor property counts, subscriber counts, and alert dispatch stats.';

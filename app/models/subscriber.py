@@ -20,6 +20,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.models.listing import City, PropertyType
 
+class SubscriptionTier(str, Enum):
+    FREE = "free"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+    LIFETIME = "lifetime"
 
 class Subscriber(Base):
     """Telegram subscriber with property preferences."""
@@ -43,6 +48,14 @@ class Subscriber(Base):
     property_type: Mapped[PropertyType | None] = mapped_column(
         Enum(PropertyType, name="property_type_enum", values_callable=lambda e: [m.value for m in e]),
         nullable=True,
+    )
+    subscription_tier: Mapped[SubscriptionTier] = mapped_column(
+        Enum(SubscriptionTier, name="subscription_tier_enum", values_callable=lambda e: [m.value for m in e]),
+        default=SubscriptionTier.FREE,
+        nullable=False,
+    )
+    subscription_expiry: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

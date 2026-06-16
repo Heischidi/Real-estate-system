@@ -241,6 +241,32 @@ async def load_more_callback_handler(
     except ValueError:
         return
 
+    # Check premium status if loading beyond page 1
+    if page > 1:
+        from app.database import AsyncSessionLocal
+        from app.models.subscriber import SubscriptionTier
+        from app.services.subscriber_service import SubscriberService
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+        async with AsyncSessionLocal() as db:
+            sub_service = SubscriberService(db)
+            subscriber = await sub_service.get_by_telegram_id(update.effective_user.id)
+            
+            is_free = True
+            if subscriber and subscriber.subscription_tier != SubscriptionTier.FREE:
+                is_free = False
+                
+            if is_free:
+                keyboard = [[InlineKeyboardButton("💎 Upgrade to Premium", callback_data="trigger_payment")]]
+                await query.message.reply_text(
+                    "🔒 *Premium Feature*\n\n"
+                    "Free users are limited to 10 properties per search.\n"
+                    "Upgrade to Premium to view unlimited properties!",
+                    parse_mode="Markdown",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+
     purpose    = parts[3] if len(parts) > 3 else ""
     try:
         max_budget = int(parts[4]) if len(parts) > 4 and parts[4] else 0
