@@ -70,7 +70,6 @@ async def enforce_community_membership(
             await update.callback_query.message.reply_html(
                 text, reply_markup=InlineKeyboardMarkup(keyboard)
             )
-            await update.callback_query.answer()
         elif update.message:
             await update.message.reply_html(
                 text, reply_markup=InlineKeyboardMarkup(keyboard)
