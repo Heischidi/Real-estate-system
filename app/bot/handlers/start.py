@@ -362,10 +362,31 @@ async def _send_city_listings(
             await msg.reply_html(no_result_msg, reply_markup=after_listings_keyboard())
             return
 
+        is_premium = False
+        try:
+            from app.database import AsyncSessionLocal
+            from app.models.subscriber import SubscriptionTier
+            from app.services.subscriber_service import SubscriberService
+            async with AsyncSessionLocal() as db:
+                sub_service = SubscriberService(db)
+                subscriber = await sub_service.get_by_telegram_id(msg.chat_id)
+                if subscriber and subscriber.subscription_tier != SubscriptionTier.FREE:
+                    is_premium = True
+        except Exception as e:
+            log.warning("Could not check premium status for images: %s", e)
+
         for listing in listings:
-            await msg.reply_html(
-                format_listing_alert(listing), disable_web_page_preview=True
-            )
+            text = format_listing_alert(listing)
+            image_url = getattr(listing, "image_url", None)
+            
+            if is_premium and image_url:
+                try:
+                    await msg.reply_photo(photo=image_url, caption=text, parse_mode="HTML")
+                except Exception as e:
+                    log.warning("Failed to send photo for listing %s: %s", listing.id, e)
+                    await msg.reply_html(text, disable_web_page_preview=True)
+            else:
+                await msg.reply_html(text, disable_web_page_preview=True)
 
         shown_so_far = page * PAGE_SIZE
         if has_more:

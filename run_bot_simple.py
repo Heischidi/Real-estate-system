@@ -418,7 +418,7 @@ async def _send_listings(
                 return await service.list_listings(filt)
 
         paginated = await asyncio.wait_for(_fetch(), timeout=20.0)
-        listings  = [format_listing_alert(l) for l in paginated.items]
+        listings  = paginated.items
         total     = paginated.total
         has_more  = (page * PAGE_SIZE) < total
 
@@ -434,7 +434,7 @@ async def _send_listings(
         start_idx = (page - 1) * PAGE_SIZE
         end_idx   = start_idx + PAGE_SIZE
         page_items = filtered[start_idx:end_idx]
-        listings   = [_format_mock(l) for l in page_items]
+        listings   = page_items
         total      = len(filtered)
         has_more   = end_idx < total
 
@@ -452,8 +452,41 @@ async def _send_listings(
         await msg.reply_html(no_msg, reply_markup=after_listings_menu())
         return
 
-    for m in listings:
-        await msg.reply_html(m, disable_web_page_preview=True)
+    is_premium = False
+    try:
+        from app.database import AsyncSessionLocal
+        from app.models.subscriber import SubscriptionTier
+        from app.services.subscriber_service import SubscriberService
+        async with AsyncSessionLocal() as db:
+            sub_service = SubscriberService(db)
+            subscriber = await sub_service.get_by_telegram_id(msg.chat_id)
+            if subscriber and subscriber.subscription_tier != SubscriptionTier.FREE:
+                is_premium = True
+    except Exception as e:
+        log.warning("Could not check premium status for images: %s", e)
+
+    from app.bot.formatters import format_listing_alert
+
+    for item in listings:
+        if isinstance(item, dict):
+            # Mock data
+            text = _format_mock(item)
+            image_url = item.get("image_url")
+            l_id = item.get("title", "mock")
+        else:
+            # DB model
+            text = format_listing_alert(item)
+            image_url = getattr(item, "image_url", None)
+            l_id = getattr(item, "id", "db")
+
+        if is_premium and image_url:
+            try:
+                await msg.reply_photo(photo=image_url, caption=text, parse_mode="HTML")
+            except Exception as e:
+                log.warning("Failed to send photo for listing %s: %s", l_id, e)
+                await msg.reply_html(text, disable_web_page_preview=True)
+        else:
+            await msg.reply_html(text, disable_web_page_preview=True)
 
     shown = page * PAGE_SIZE
     if has_more:
