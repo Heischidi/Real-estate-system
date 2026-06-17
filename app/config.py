@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     telegram_bot_token: str = Field(..., min_length=20)
     telegram_admin_chat_id: int | None = None
+    community_channel_username: str | None = None
 
     # -------------------------------------------------------------------------
     # JWT / Admin Auth

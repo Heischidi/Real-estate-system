@@ -222,6 +222,10 @@ def load_more_menu(city_code: str, next_page: int, purpose: str, max_budget: int
 
 # ── Handlers ──────────────────────────────────────────────────────────────────
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    from app.bot.middleware import enforce_community_membership
+    if not await enforce_community_membership(update, context):
+        return
+
     user = update.effective_user
     name = (user.first_name or "there") if user else "there"
     log.info("User /start — name=%s id=%s", name, user.id if user else "?")
@@ -567,6 +571,10 @@ def build_app() -> Application:
     app.add_handler(CallbackQueryHandler(load_more_callback,      pattern="^load_more:"))
     app.add_handler(CallbackQueryHandler(back_to_cities_callback, pattern="^back_to_cities$"))
     app.add_handler(CallbackQueryHandler(menu_callback,           pattern="^menu:"))
+    
+    from app.bot.handlers.start import check_membership_callback_handler
+    app.add_handler(CallbackQueryHandler(check_membership_callback_handler, pattern="^check_membership$"))
+    
     app.add_error_handler(error_handler)
 
     return app

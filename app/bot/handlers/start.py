@@ -129,6 +129,10 @@ def _parse_budget(text: str) -> int | None:
 # ── Step 1 — /start ───────────────────────────────────────────────────────────
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start — sends a personalised welcome with the city selector."""
+    from app.bot.middleware import enforce_community_membership
+    if not await enforce_community_membership(update, context):
+        return
+
     user = update.effective_user
     first_name = user.first_name if user and user.first_name else "there"
     log.info("bot_start", telegram_id=user.id if user else None, first_name=first_name)
@@ -451,6 +455,27 @@ async def cities_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     """Handle /cities command."""
     await update.message.reply_html(CITIES_MESSAGE)
 
+
+async def check_membership_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle I Have Joined button click."""
+    query = update.callback_query
+    
+    from app.bot.middleware import enforce_community_membership
+    if await enforce_community_membership(update, context):
+        await query.answer("Verification successful! ✅")
+        try:
+            await query.message.delete()
+        except Exception:
+            pass
+        # Restart the flow
+        user = update.effective_user
+        first_name = user.first_name if user and user.first_name else "there"
+        await query.message.reply_html(
+            _build_welcome(first_name),
+            reply_markup=start_city_keyboard(),
+        )
+    else:
+        await query.answer("You have not joined the community yet! ❌", show_alert=True)
 
 # ── ConversationHandler builder ───────────────────────────────────────────────
 def build_browse_handler() -> ConversationHandler:
