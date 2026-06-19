@@ -27,6 +27,7 @@ from app.bot.handlers.start import (
     load_more_callback_handler,
     back_to_cities_callback_handler,
     build_browse_handler,
+    check_membership_callback_handler,
 )
 from app.bot.handlers.subscribe import build_subscribe_handler
 from app.bot.handlers.payment import payment_conv_handler
@@ -79,6 +80,9 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("unsubscribe", unsubscribe_handler))
 
     # Standalone callbacks (outside conversations)
+    app.add_handler(
+        CallbackQueryHandler(check_membership_callback_handler, pattern="^check_membership$")
+    )
     app.add_handler(
         CallbackQueryHandler(load_more_callback_handler, pattern="^load_more:")
     )

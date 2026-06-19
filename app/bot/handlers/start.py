@@ -459,19 +459,24 @@ async def cities_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 async def check_membership_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle I Have Joined button click."""
     query = update.callback_query
-    
+    await query.answer()
+
     from app.bot.middleware import enforce_community_membership
     if await enforce_community_membership(update, context):
-        await query.answer("Verification successful! ✅")
+        # Delete the "please join" prompt first
         try:
             await query.message.delete()
         except Exception:
             pass
-        # Restart the flow
+
+        # Send the welcome + city selector as a fresh message
         user = update.effective_user
         first_name = user.first_name if user and user.first_name else "there"
-        await query.message.reply_html(
-            _build_welcome(first_name),
+        chat_id = query.message.chat_id
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=_build_welcome(first_name),
+            parse_mode="HTML",
             reply_markup=start_city_keyboard(),
         )
     else:
