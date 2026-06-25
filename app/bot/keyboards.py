@@ -69,36 +69,57 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def start_city_keyboard() -> InlineKeyboardMarkup:
-    """Keyboard for selecting a city upon /start."""
+def start_category_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard for selecting Houses vs Cars."""
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("🏠 Houses & Properties", callback_data="category:houses")],
+            [InlineKeyboardButton("🚗 Cars & Vehicles", callback_data="category:cars")],
+        ]
+    )
+
+
+def start_city_keyboard(category: str = "houses") -> InlineKeyboardMarkup:
+    """Keyboard for selecting a city upon category selection."""
+    if category == "cars":
+        return InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("🏛️ Abuja", callback_data="start_city:abuja")],
+                [InlineKeyboardButton("🔙 Back to Categories", callback_data="back_to_categories")],
+            ]
+        )
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("🏛️ Abuja", callback_data="start_city:abuja")],
             [InlineKeyboardButton("🌊 Lagos", callback_data="start_city:lagos")],
             [InlineKeyboardButton("⚓ Port Harcourt", callback_data="start_city:port_harcourt")],
+            [InlineKeyboardButton("🔙 Back to Categories", callback_data="back_to_categories")],
         ]
     )
 
 
-def after_listings_keyboard() -> InlineKeyboardMarkup:
+def after_listings_keyboard(category: str = "houses") -> InlineKeyboardMarkup:
     """Keyboard shown after displaying the last page of listings."""
+    back_callback = "back_to_cities" if category == "houses" else "back_to_categories"
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("🔔 Subscribe for Alerts", callback_data="menu:subscribe")],
-            [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+            [InlineKeyboardButton("🔙 Back", callback_data=back_callback)],
         ]
     )
 
 
-def rent_or_buy_keyboard(city_code: str) -> InlineKeyboardMarkup:
+def rent_or_buy_keyboard(city_code: str, category: str = "houses") -> InlineKeyboardMarkup:
     """Ask the user whether they want to rent or buy."""
+    back_callback = "back_to_categories" if category == "cars" else "back_to_cities"
+    buy_label = "🚗 Buy" if category == "cars" else "🏠 Buy"
     return InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton("🔑 Rent", callback_data=f"browse_purpose:{city_code}:rent"),
-                InlineKeyboardButton("🏠 Buy", callback_data=f"browse_purpose:{city_code}:sale"),
+                InlineKeyboardButton(buy_label, callback_data=f"browse_purpose:{city_code}:sale"),
             ],
-            [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+            [InlineKeyboardButton("🔙 Back", callback_data=back_callback)],
         ]
     )
 
@@ -108,19 +129,22 @@ def load_more_keyboard(
     next_page: int,
     purpose: str = "",
     max_budget: int = 0,
+    category: str = "houses",
 ) -> InlineKeyboardMarkup:
     """Keyboard shown mid-listing to offer loading the next page.
 
     Encodes purpose and budget into callback_data so the next page
     request can reproduce the same filters.
     """
+    back_callback = "back_to_cities" if category == "houses" else "back_to_categories"
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton(
                 "⬇️ Load More",
-                callback_data=f"load_more:{city_code}:{next_page}:{purpose}:{max_budget}",
+                callback_data=f"load_more:{city_code}:{next_page}:{purpose}:{max_budget}:{category}",
             )],
             [InlineKeyboardButton("🔔 Subscribe for Alerts", callback_data="menu:subscribe")],
-            [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+            [InlineKeyboardButton("🔙 Back", callback_data=back_callback)],
         ]
     )
+
