@@ -65,11 +65,13 @@ from telegram.request import HTTPXRequest
 from app.bot.handlers.payment import payment_conv_handler
 
 # ── Conversation states ───────────────────────────────────────────────────────
-BROWSE_PURPOSE, BROWSE_BUDGET = range(10, 12)
+BROWSE_CITY, BROWSE_PURPOSE, BROWSE_BUDGET = range(10, 13)
 
-_KEY_CITY    = "browse_city"
-_KEY_PURPOSE = "browse_purpose"
-_KEY_BUDGET  = "browse_budget"
+_KEY_CATEGORY = "browse_category"
+_KEY_CITY     = "browse_city"
+_KEY_PURPOSE  = "browse_purpose"
+_KEY_BUDGET   = "browse_budget"
+
 
 # ── Messages ──────────────────────────────────────────────────────────────────
 def build_welcome(first_name: str) -> str:
@@ -86,8 +88,9 @@ def build_welcome(first_name: str) -> str:
         "   Detached Houses \u2022 Terraces\n"
         "   Lands \u2022 Commercial\n"
         "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-        "👇 <b>Select a city below to view available properties:</b>"
+        "👇 <b>Select what you would like to browse:</b>"
     )
+
 
 HELP_TEXT = (
     "\U0001f4d6 <b>RealtorPal Commands</b>\n\n"
@@ -135,6 +138,19 @@ MOCK_LISTINGS = {
     ],
 }
 
+MOCK_CARS = {
+    "abuja": [
+        {"title": "Toyota Corolla 2018 (Silver)", "location": "Wuse 2, Abuja", "price": 11_500_000, "purpose": "sale", "type": "Car", "year": 2018, "colour": "Silver", "url": "https://wa.me/2348012345678"},
+        {"title": "Honda Accord 2017 (Black)", "location": "Garki, Abuja", "price": 12_800_000, "purpose": "sale", "type": "Car", "year": 2017, "colour": "Black", "url": "https://wa.me/2348012345678"},
+        {"title": "Hyundai Elantra 2019 (White)", "location": "Maitama, Abuja", "price": 13_500_000, "purpose": "sale", "type": "Car", "year": 2019, "colour": "White", "url": "https://wa.me/2348012345678"},
+        {"title": "Kia Sportage 2016 (Blue)", "location": "Asokoro, Abuja", "price": 14_200_000, "purpose": "sale", "type": "Car", "year": 2016, "colour": "Blue", "url": "https://wa.me/2348012345678"},
+        {"title": "Lexus IS 250 2015 (Red)", "location": "Gwarinpa, Abuja", "price": 14_900_000, "purpose": "sale", "type": "Car", "year": 2015, "colour": "Red", "url": "https://wa.me/2348012345678"},
+    ],
+    "lagos": [],
+    "port_harcourt": []
+}
+
+
 CITY_DISPLAY = {
     "abuja":         ("Abuja",         "abuja"),
     "lagos":         ("Lagos",         "lagos"),
@@ -169,6 +185,21 @@ def _format_mock(listing: dict) -> str:
     )
 
 
+def _format_mock_car(listing: dict) -> str:
+    purpose_tag = " (For Rent)" if listing.get("purpose") == "rent" else " (For Sale)"
+    return (
+        f"🚗 <b>{listing['title']}{purpose_tag}</b>\n\n"
+        f"📍 <b>Location:</b> {listing['location']}\n"
+        f"🏷️ <b>Type:</b> Car\n"
+        f"💰 <b>Price:</b> {_fmt_price(listing['price'])}\n"
+        f"📅 <b>Year of Make:</b> {listing.get('year', 'N/A')}\n"
+        f"🎨 <b>Colour:</b> {listing.get('colour', 'N/A')}\n\n"
+        f"🔗 <a href='{listing['url']}'>Contact Seller</a>\n\n"
+        f"<i>📡 via RealtorPal (demo)</i>"
+    )
+
+
+
 def _parse_budget(text: str) -> int | None | int:
     """Returns amount (int), None (no cap), or -1 (invalid)."""
     text = text.strip().lower().replace(",", "").replace("₦", "")
@@ -186,38 +217,51 @@ def _parse_budget(text: str) -> int | None | int:
 
 
 # ── Keyboards ─────────────────────────────────────────────────────────────────
+def start_category_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🏠 Houses & Properties", callback_data="category:houses")],
+        [InlineKeyboardButton("🚗 Cars & Vehicles", callback_data="category:cars")],
+    ])
+
+
 def start_city_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🏛️ Abuja", callback_data="start_city:abuja")],
         [InlineKeyboardButton("🌊 Lagos", callback_data="start_city:lagos")],
         [InlineKeyboardButton("⚓ Port Harcourt", callback_data="start_city:port_harcourt")],
+        [InlineKeyboardButton("🔙 Back to Categories", callback_data="back_to_categories")],
     ])
 
 
-def rent_or_buy_keyboard(city_code: str) -> InlineKeyboardMarkup:
+def rent_or_buy_keyboard(city_code: str, is_car: bool = False) -> InlineKeyboardMarkup:
+    back_callback = "back_to_categories" if is_car else "back_to_cities"
+    buy_label = "🚗 Buy" if is_car else "🏠 Buy"
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("🔑 Rent", callback_data=f"browse_purpose:{city_code}:rent"),
-            InlineKeyboardButton("🏠 Buy",  callback_data=f"browse_purpose:{city_code}:sale"),
+            InlineKeyboardButton(buy_label,  callback_data=f"browse_purpose:{city_code}:sale"),
         ],
-        [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+        [InlineKeyboardButton("🔙 Back", callback_data=back_callback)],
     ])
 
 
-def after_listings_menu() -> InlineKeyboardMarkup:
+def after_listings_menu(category: str = "houses") -> InlineKeyboardMarkup:
+    back_callback = "back_to_cities" if category == "houses" else "back_to_categories"
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("\U0001f514 Subscribe for Alerts", callback_data="menu:subscribe")],
-        [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+        [InlineKeyboardButton("🔔 Subscribe for Alerts", callback_data="menu:subscribe")],
+        [InlineKeyboardButton("🔙 Back", callback_data=back_callback)],
     ])
 
 
-def load_more_menu(city_code: str, next_page: int, purpose: str, max_budget: int) -> InlineKeyboardMarkup:
+def load_more_menu(city_code: str, next_page: int, purpose: str, max_budget: int, category: str = "houses") -> InlineKeyboardMarkup:
+    back_callback = "back_to_cities" if category == "houses" else "back_to_categories"
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("⬇️ Load More",
-            callback_data=f"load_more:{city_code}:{next_page}:{purpose}:{max_budget}")],
-        [InlineKeyboardButton("\U0001f514 Subscribe for Alerts", callback_data="menu:subscribe")],
-        [InlineKeyboardButton("🔙 Back to Cities", callback_data="back_to_cities")],
+            callback_data=f"load_more:{city_code}:{next_page}:{purpose}:{max_budget}:{category}")],
+        [InlineKeyboardButton("🔔 Subscribe for Alerts", callback_data="menu:subscribe")],
+        [InlineKeyboardButton("🔙 Back", callback_data=back_callback)],
     ])
+
 
 
 # ── Handlers ──────────────────────────────────────────────────────────────────
@@ -226,10 +270,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await enforce_community_membership(update, context):
         return
 
+    # Clear previous browsing state
+    context.user_data.pop(_KEY_CATEGORY, None)
+    context.user_data.pop(_KEY_CITY, None)
+    context.user_data.pop(_KEY_PURPOSE, None)
+    context.user_data.pop(_KEY_BUDGET, None)
+
     user = update.effective_user
     name = (user.first_name or "there") if user else "there"
     log.info("User /start — name=%s id=%s", name, user.id if user else "?")
-    await update.message.reply_html(build_welcome(name), reply_markup=start_city_menu())
+    await update.message.reply_html(build_welcome(name), reply_markup=start_category_menu())
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -240,17 +290,44 @@ async def cities_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await update.message.reply_html(CITIES_TEXT)
 
 
-# Step 1 — city selected
+# Entry point callback after category is selected
+async def start_category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    category = (query.data or "").replace("category:", "")
+    context.user_data[_KEY_CATEGORY] = category
+    
+    if category == "houses":
+        await query.edit_message_text(
+            "👇 <b>Select a city below to view available properties:</b>",
+            reply_markup=start_city_menu(),
+            parse_mode="HTML"
+        )
+        return BROWSE_CITY
+    else:
+        # Cars (Abuha only)
+        context.user_data[_KEY_CITY] = "abuja"
+        await query.edit_message_text(
+            "🚗 Cars are only available in <b>Abuja</b>.\n\n"
+            "Are you looking to <b>Rent</b> or <b>Buy</b> a car?",
+            reply_markup=rent_or_buy_keyboard("abuja", is_car=True),
+            parse_mode="HTML"
+        )
+        return BROWSE_PURPOSE
+
+
+# Step 1 — city selected (for Houses)
 async def start_city_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     city_code = (query.data or "").replace("start_city:", "")
     context.user_data[_KEY_CITY] = city_code  # type: ignore[index]
     city_name, _ = CITY_DISPLAY.get(city_code, (city_code.replace("_", " ").title(), city_code))
-    await query.message.reply_html(
+    await query.edit_message_text(
         f"🏙️ <b>{city_name}</b> selected!\n\n"
         "Are you looking to <b>Rent</b> or <b>Buy</b> a property?",
-        reply_markup=rent_or_buy_keyboard(city_code),
+        reply_markup=rent_or_buy_keyboard(city_code, is_car=False),
+        parse_mode="HTML"
     )
     return BROWSE_PURPOSE
 
@@ -266,15 +343,20 @@ async def browse_purpose_callback(update: Update, context: ContextTypes.DEFAULT_
     purpose   = parts[2]
     context.user_data[_KEY_CITY]    = city_code  # type: ignore[index]
     context.user_data[_KEY_PURPOSE] = purpose    # type: ignore[index]
-    label = "🔑 Rent" if purpose == "rent" else "🏠 Buy"
-    await query.message.reply_html(
+    
+    category = context.user_data.get(_KEY_CATEGORY, "houses")
+    items_label = "cars" if category == "cars" else "properties"
+    label = "🔑 Rent" if purpose == "rent" else ("🚗 Buy" if category == "cars" else "🏠 Buy")
+    
+    await query.edit_message_text(
         f"{label} — got it!\n\n"
         "💰 <b>What is your maximum budget?</b>\n\n"
         "Enter an amount in Naira:\n"
-        "  • <code>3000000</code> for ₦3M\n"
-        "  • <code>3m</code> for ₦3M\n"
+        "  • <code>12000000</code> for ₦12M\n"
+        "  • <code>12m</code> for ₦12M\n"
         "  • <code>500k</code> for ₦500K\n\n"
-        "Type <code>0</code> or <code>skip</code> to see <b>all</b> properties with no budget cap."
+        f"Type <code>0</code> or <code>skip</code> to see <b>all</b> {items_label} with no budget cap.",
+        parse_mode="HTML"
     )
     return BROWSE_BUDGET
 
@@ -286,13 +368,14 @@ async def browse_budget_entered(update: Update, context: ContextTypes.DEFAULT_TY
     if budget == -1:
         await update.message.reply_html(
             "⚠️ I didn't understand that amount. Please try again.\n"
-            "Examples: <code>3000000</code>, <code>3m</code>, <code>500k</code>, <code>0</code>"
+            "Examples: <code>12000000</code>, <code>12m</code>, <code>500k</code>, <code>0</code>"
         )
         return BROWSE_BUDGET
     context.user_data[_KEY_BUDGET] = budget  # type: ignore[index]
+    category  = context.user_data.get(_KEY_CATEGORY, "houses")
     city_code = context.user_data.get(_KEY_CITY, "")  # type: ignore[index]
     purpose   = context.user_data.get(_KEY_PURPOSE, "")  # type: ignore[index]
-    await _send_listings(update.message, city_code, purpose, budget, page=1)
+    await _send_listings(update.message, city_code, purpose, budget, page=1, category=category)
     return ConversationHandler.END
 
 
@@ -341,19 +424,33 @@ async def load_more_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         max_budget = None
     if max_budget == 0:
         max_budget = None
-    await _send_listings(query.message, city_code, purpose, max_budget, page=page)
+    category = parts[5] if len(parts) > 5 else "houses"
+    await _send_listings(query.message, city_code, purpose, max_budget, page=page, category=category)
 
 
-async def back_to_cities_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def back_to_cities_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(
+        "👇 <b>Select a city below to view available properties:</b>",
+        reply_markup=start_city_menu(),
+        parse_mode="HTML"
+    )
+    return BROWSE_CITY
+
+
+async def back_to_categories_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     user = update.effective_user
     name = (user.first_name or "there") if user else "there"
     await query.edit_message_text(
         build_welcome(name),
-        reply_markup=start_city_menu(),
+        reply_markup=start_category_menu(),
         parse_mode="HTML"
     )
+    return ConversationHandler.END
+
 
 
 async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -374,6 +471,7 @@ async def _send_listings(
     purpose: str,
     max_budget: int | None,
     page: int,
+    category: str = "houses",
 ) -> None:
     """Fetch & send paginated listings with budget + purpose filter."""
     from telegram import Message
@@ -386,9 +484,12 @@ async def _send_listings(
     budget_label  = f" within {_fmt_price(max_budget)}" if max_budget else ""
 
     PAGE_SIZE = 10
+    item_type_label = "cars" if category == "cars" else "properties"
+    item_type_label_single = "car" if category == "cars" else "property"
+    item_type_label_plural = "cars" if category == "cars" else "properties"
 
     if page == 1:
-        summary = f"🔍 <b>Fetching properties in {city_name}"
+        summary = f"🔍 <b>Fetching {item_type_label} in {city_name}"
         if purpose_label:
             summary += f" {purpose_label}"
         summary += budget_label + "...</b>"
@@ -400,7 +501,7 @@ async def _send_listings(
     has_more = False
     try:
         from app.database import get_db_context
-        from app.models.listing import City as DBCity, ListingPurpose
+        from app.models.listing import City as DBCity, ListingPurpose, PropertyType
         from app.schemas.listing import ListingFilter
         from app.services.listing_service import ListingService
         from app.bot.formatters import format_listing_alert
@@ -411,10 +512,14 @@ async def _send_listings(
                 purpose_enum = (
                     ListingPurpose(purpose) if purpose in ("rent", "sale") else None
                 )
+                prop_type_filter = PropertyType.CAR if category == "cars" else None
+                exclude_type_filter = PropertyType.CAR if category == "houses" else None
                 filt = ListingFilter(
                     city=DBCity(city_code),
                     location_keyword=location_kw,
                     listing_purpose=purpose_enum,
+                    property_type=prop_type_filter,
+                    exclude_type=exclude_type_filter,
                     max_price=max_budget,
                     page=page,
                     page_size=PAGE_SIZE,
@@ -429,7 +534,7 @@ async def _send_listings(
     except Exception as e:
         log.warning("DB unavailable, using mock listings: %s", e)
         # Fall back to mock data with local filtering
-        raw = MOCK_LISTINGS.get(city_code, [])
+        raw = MOCK_LISTINGS.get(city_code, []) if category == "houses" else MOCK_CARS.get(city_code, [])
         filtered = [
             l for l in raw
             if (not purpose or l.get("purpose") == purpose or l.get("purpose") is None)
@@ -443,17 +548,17 @@ async def _send_listings(
         has_more   = end_idx < total
 
     if not listings:
-        no_msg = f"📭 <b>No properties found in {city_name}"
+        no_msg = f"📭 <b>No {item_type_label} found in {city_name}"
         if purpose_label:
             no_msg += f" {purpose_label}"
         no_msg += budget_label + ".</b>\n\n"
         no_msg += (
-            "Try a higher budget or different city.\n"
+            "Try a higher budget or different search criteria.\n"
             "You can also 🔔 Subscribe to get notified when new ones arrive!"
             if max_budget else
-            "Properties will appear once they are added."
+            f"Listings will appear once they are added."
         )
-        await msg.reply_html(no_msg, reply_markup=after_listings_menu())
+        await msg.reply_html(no_msg, reply_markup=after_listings_menu(category))
         return
 
     is_premium = False
@@ -474,7 +579,7 @@ async def _send_listings(
     for item in listings:
         if isinstance(item, dict):
             # Mock data
-            text = _format_mock(item)
+            text = _format_mock_car(item) if category == "cars" else _format_mock(item)
             image_url = item.get("image_url")
             l_id = item.get("title", "mock")
         else:
@@ -495,16 +600,17 @@ async def _send_listings(
     shown = page * PAGE_SIZE
     if has_more:
         await msg.reply_html(
-            f"📄 <b>Showing {min(shown, total)} of {total} properties.</b>\n"
+            f"📄 <b>Showing {min(shown, total)} of {total} {item_type_label_plural}.</b>\n"
             "Tap ⬇️ Load More to see the next 10.",
-            reply_markup=load_more_menu(city_code, page + 1, purpose, max_budget or 0),
+            reply_markup=load_more_menu(city_code, page + 1, purpose, max_budget or 0, category),
         )
     else:
         await msg.reply_html(
-            f"✅ <b>All {total} propert{'y' if total == 1 else 'ies'} shown.</b>\n"
+            f"✅ <b>All {total} {item_type_label_single if total == 1 else item_type_label_plural} shown.</b>\n"
             "Would you like to set up automatic alerts for new ones?",
-            reply_markup=after_listings_menu(),
+            reply_markup=after_listings_menu(category),
         )
+
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -512,14 +618,16 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def _cancel_browse(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data.pop(_KEY_CATEGORY, None) # type: ignore[union-attr]
     context.user_data.pop(_KEY_CITY, None)    # type: ignore[union-attr]
     context.user_data.pop(_KEY_PURPOSE, None) # type: ignore[union-attr]
     context.user_data.pop(_KEY_BUDGET, None)  # type: ignore[union-attr]
     await update.message.reply_html(
         "❌ Browse cancelled. Use /start to begin again.",
-        reply_markup=start_city_menu(),
+        reply_markup=start_category_menu(),
     )
     return ConversationHandler.END
+
 
 
 # ── Application builder ───────────────────────────────────────────────────────
@@ -539,15 +647,20 @@ def build_app() -> Application:
         .build()
     )
 
-    # Browse conversation: city → rent/buy → budget → listings
+    # Browse conversation: category → city → rent/buy → budget → listings
     browse_conv = ConversationHandler(
         entry_points=[
-            CallbackQueryHandler(start_city_callback, pattern="^start_city:"),
+            CallbackQueryHandler(start_category_callback, pattern="^category:"),
         ],
         states={
+            BROWSE_CITY: [
+                CallbackQueryHandler(start_city_callback, pattern="^start_city:"),
+                CallbackQueryHandler(back_to_categories_callback, pattern="^back_to_categories$"),
+            ],
             BROWSE_PURPOSE: [
                 CallbackQueryHandler(browse_purpose_callback, pattern="^browse_purpose:"),
                 CallbackQueryHandler(back_to_cities_callback, pattern="^back_to_cities$"),
+                CallbackQueryHandler(back_to_categories_callback, pattern="^back_to_categories$"),
             ],
             BROWSE_BUDGET: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, browse_budget_entered),
@@ -570,12 +683,14 @@ def build_app() -> Application:
     app.add_handler(CommandHandler("cities",  cities_cmd))
     app.add_handler(CallbackQueryHandler(load_more_callback,      pattern="^load_more:"))
     app.add_handler(CallbackQueryHandler(back_to_cities_callback, pattern="^back_to_cities$"))
+    app.add_handler(CallbackQueryHandler(back_to_categories_callback, pattern="^back_to_categories$"))
     app.add_handler(CallbackQueryHandler(menu_callback,           pattern="^menu:"))
     
     from app.bot.handlers.start import check_membership_callback_handler
     app.add_handler(CallbackQueryHandler(check_membership_callback_handler, pattern="^check_membership$"))
     
     app.add_error_handler(error_handler)
+
 
     return app
 

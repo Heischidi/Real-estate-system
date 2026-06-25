@@ -1315,7 +1315,9 @@
                         <option value="terrace">Terrace</option>
                         <option value="land">Land</option>
                         <option value="commercial">Commercial</option>
+                        <option value="car">Car</option>
                     </select>
+
                 </div>
 
                 <div class="properties-grid" id="properties-grid-list">
@@ -1454,7 +1456,9 @@
                                 <option value="terrace">Terrace</option>
                                 <option value="land">Land</option>
                                 <option value="commercial">Commercial</option>
+                                <option value="car">Car</option>
                             </select>
+
                         </div>
                     </div>
 
@@ -1885,19 +1889,44 @@
                         
                         <div>
                             <div class="card-features">
-                                <div class="feature-item">
-                                    <i class="fa-solid fa-bed"></i>
-                                    <span>${prop.bedrooms !== null ? prop.bedrooms : '-'} Bed</span>
-                                </div>
-                                <div class="feature-item">
-                                    <i class="fa-solid fa-shower"></i>
-                                    <span>${prop.bathrooms !== null ? prop.bathrooms : '-'} Bath</span>
-                                </div>
-                                <div class="feature-item">
-                                    <i class="fa-solid fa-restroom"></i>
-                                    <span>${prop.toilets !== null ? prop.toilets : '-'} Toilet</span>
-                                </div>
+                                ${(() => {
+                                    if (prop.property_type === 'car') {
+                                        let colour = 'N/A';
+                                        if (prop.description) {
+                                            const match = prop.description.match(/Colour:\s*([A-Za-z/ -]+)/i);
+                                            if (match) {
+                                                colour = match[1].split('.')[0].trim();
+                                            }
+                                        }
+                                        return `
+                                            <div class="feature-item">
+                                                <i class="fa-solid fa-calendar-days"></i>
+                                                <span>${prop.bedrooms !== null ? prop.bedrooms : 'N/A'} Year</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fa-solid fa-palette"></i>
+                                                <span>${colour}</span>
+                                            </div>
+                                        `;
+                                    } else {
+                                        return `
+                                            <div class="feature-item">
+                                                <i class="fa-solid fa-bed"></i>
+                                                <span>${prop.bedrooms !== null ? prop.bedrooms : '-'} Bed</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fa-solid fa-shower"></i>
+                                                <span>${prop.bathrooms !== null ? prop.bathrooms : '-'} Bath</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fa-solid fa-restroom"></i>
+                                                <span>${prop.toilets !== null ? prop.toilets : '-'} Toilet</span>
+                                            </div>
+                                        `;
+                                    }
+                                })()}
                             </div>
+
                             
                             <div class="card-agent">
                                 <span><i class="fa-solid fa-user-tie"></i> <b>Agent:</b> ${prop.agent_name || 'N/A'}</span>
@@ -2223,7 +2252,11 @@
                 el.modalTitleText.innerText = 'Add New Property';
                 el.propertyModal.classList.add('active');
             }
+            if (el.propType) {
+                el.propType.dispatchEvent(new Event('change'));
+            }
         }
+
 
         function closePropertyModal() {
             el.propertyModal.classList.remove('active');
@@ -2238,6 +2271,8 @@
                 return;
             }
             
+            openPropertyModal(true);
+            
             // Populating fields
             el.propTitle.value = prop.title || '';
             el.propCity.value = prop.city || '';
@@ -2245,8 +2280,22 @@
             el.propLocation.value = prop.location || '';
             el.propPrice.value = prop.price || '';
             el.propBeds.value = prop.bedrooms !== null ? prop.bedrooms : '';
-            el.propBaths.value = prop.bathrooms !== null ? prop.bathrooms : '';
-            el.propToilets.value = prop.toilets !== null ? prop.toilets : '';
+            
+            if (prop.property_type === 'car') {
+                let colour = '';
+                if (prop.description) {
+                    const match = prop.description.match(/Colour:\s*([A-Za-z/ -]+)/i);
+                    if (match) {
+                        colour = match[1].split('.')[0].trim();
+                    }
+                }
+                el.propBaths.value = colour;
+                el.propToilets.value = '';
+            } else {
+                el.propBaths.value = prop.bathrooms !== null ? prop.bathrooms : '';
+                el.propToilets.value = prop.toilets !== null ? prop.toilets : '';
+            }
+            
             el.propDesc.value = prop.description || '';
             el.propAgentName.value = prop.agent_name || '';
             el.propAgentPhone.value = prop.agent_phone || '';
@@ -2259,8 +2308,11 @@
                 el.previewPlaceholder.style.display = 'none';
             }
             
-            openPropertyModal(true);
+            if (el.propType) {
+                el.propType.dispatchEvent(new Event('change'));
+            }
         }
+
 
         async function handleSaveProperty(e) {
             e.preventDefault();
@@ -2269,6 +2321,7 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner spinner"></i> Saving...`;
             
+            const isCar = el.propType.value === 'car';
             const data = {
                 title: el.propTitle.value.trim(),
                 city: el.propCity.value,
@@ -2276,14 +2329,24 @@
                 location: el.propLocation.value.trim() || null,
                 price: el.propPrice.value ? parseInt(el.propPrice.value) : null,
                 bedrooms: el.propBeds.value ? parseInt(el.propBeds.value) : null,
-                bathrooms: el.propBaths.value ? parseInt(el.propBaths.value) : null,
-                toilets: el.propToilets.value ? parseInt(el.propToilets.value) : null,
-                description: el.propDesc.value.trim() || null,
+                bathrooms: isCar ? null : (el.propBaths.value ? parseInt(el.propBaths.value) : null),
+                toilets: isCar ? null : (el.propToilets.value ? parseInt(el.propToilets.value) : null),
+                description: (() => {
+                    let desc = el.propDesc.value.trim() || '';
+                    if (isCar && el.propBaths.value) {
+                        const cleanColour = el.propBaths.value.trim();
+                        if (!desc.toLowerCase().includes('colour:')) {
+                            desc = `Colour: ${cleanColour}. ${desc}`.trim();
+                        }
+                    }
+                    return desc || null;
+                })(),
                 agent_name: el.propAgentName.value.trim() || null,
                 agent_phone: el.propAgentPhone.value.trim() || null,
                 image_url: el.propImage.value.trim() || null,
                 listing_url: el.propLink.value.trim() || null
             };
+
             
             try {
                 let result;
@@ -2357,6 +2420,40 @@
             el.modalCloseBtn.addEventListener('click', closePropertyModal);
             el.modalCancelBtn.addEventListener('click', closePropertyModal);
             el.propertyForm.addEventListener('submit', handleSaveProperty);
+            
+            // Dynamic labels/inputs for Car type
+            if (el.propType) {
+                el.propType.addEventListener('change', (e) => {
+                    const isCar = e.target.value === 'car';
+                    const bedsLabel = document.querySelector('label[for="prop-beds"]');
+                    const bathsLabel = document.querySelector('label[for="prop-baths"]');
+                    const toiletsLabel = document.querySelector('label[for="prop-toilets"]');
+                    
+                    if (isCar) {
+                        if (bedsLabel) bedsLabel.innerText = 'Year of Make *';
+                        if (bathsLabel) bathsLabel.innerText = 'Colour (Describe color)';
+                        if (toiletsLabel) toiletsLabel.parentElement.style.opacity = '0.3';
+                        if (el.propToilets) {
+                            el.propToilets.disabled = true;
+                            el.propToilets.value = '';
+                        }
+                        if (el.propBaths) {
+                            el.propBaths.type = 'text';
+                            el.propBaths.placeholder = 'e.g. Silver, Black';
+                        }
+                    } else {
+                        if (bedsLabel) bedsLabel.innerText = 'Bedrooms';
+                        if (bathsLabel) bathsLabel.innerText = 'Bathrooms';
+                        if (toiletsLabel) toiletsLabel.parentElement.style.opacity = '1';
+                        if (el.propToilets) el.propToilets.disabled = false;
+                        if (el.propBaths) {
+                            el.propBaths.type = 'number';
+                            el.propBaths.placeholder = '';
+                        }
+                    }
+                });
+            }
+
             
             // Live image preview
             el.propImage.addEventListener('input', (e) => {

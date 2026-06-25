@@ -87,6 +87,9 @@ class ListingService:
             query = query.where(Listing.city == filters.city)
         if filters.property_type:
             query = query.where(Listing.property_type == filters.property_type)
+        elif filters.exclude_type:
+            query = query.where(Listing.property_type != filters.exclude_type)
+
         if filters.listing_purpose:
             # Include listings that match the purpose OR have no purpose tagged (NULL)
             # so existing untagged properties still appear in results.

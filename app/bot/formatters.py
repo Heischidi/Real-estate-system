@@ -12,6 +12,7 @@ PROPERTY_TYPE_EMOJI: dict[str, str] = {
     "terrace": "🏘️",
     "land": "🌍",
     "commercial": "🏪",
+    "car": "🚗",
 }
 
 CITY_DISPLAY: dict[str, str] = {
@@ -46,18 +47,6 @@ def format_listing_alert(listing: Listing) -> str:
     )
     emoji = PROPERTY_TYPE_EMOJI.get(prop_type_str, "🏠")
 
-    bedrooms_str = ""
-    if listing.bedrooms is not None:
-        bedrooms_str = f"\n🛏 <b>Bedrooms:</b> {listing.bedrooms}"
-
-    bathrooms_str = ""
-    if listing.bathrooms is not None:
-        bathrooms_str = f"\n🚿 <b>Bathrooms:</b> {listing.bathrooms}"
-
-    toilets_str = ""
-    if listing.toilets is not None:
-        toilets_str = f"\n🚽 <b>Toilets:</b> {listing.toilets}"
-
     location_str = ""
     if listing.location:
         location_str = listing.location
@@ -73,6 +62,49 @@ def format_listing_alert(listing: Listing) -> str:
         full_location = city_display
     else:
         full_location = location_str or "Nigeria"
+
+    if prop_type_str == "car":
+        import re
+        colour = "N/A"
+        if listing.description:
+            m = re.search(r"Colour:\s*([A-Za-z/ -]+)", listing.description, re.IGNORECASE)
+            if m:
+                colour = m.group(1).split(".")[0].strip()
+        
+        year_str = f"\n📅 <b>Year of Make:</b> {listing.bedrooms}" if listing.bedrooms else ""
+        colour_str = f"\n🎨 <b>Colour:</b> {colour}" if colour else ""
+        
+        agent_str = ""
+        if listing.agent_name:
+            agent_str = f"\n👤 <b>Agent:</b> {listing.agent_name}"
+        if listing.agent_phone:
+            agent_str += f"\n📞 <b>Phone:</b> {listing.agent_phone}"
+            
+        title_display = listing.title[:80] + ("..." if len(listing.title) > 80 else "")
+        price_display = format_price(listing.price, listing.currency)
+        
+        return (
+            f"🚗 <b>{title_display}</b>\n\n"
+            f"📍 <b>Location:</b> {full_location}\n"
+            f"🏷️ <b>Type:</b> Car\n"
+            f"💰 <b>Price:</b> {price_display}"
+            f"{year_str}"
+            f"{colour_str}"
+            f"{agent_str}\n\n"
+            f"<i>📡 via {listing.source.replace('_', ' ').title()}</i>"
+        )
+
+    bedrooms_str = ""
+    if listing.bedrooms is not None:
+        bedrooms_str = f"\n🛏 <b>Bedrooms:</b> {listing.bedrooms}"
+
+    bathrooms_str = ""
+    if listing.bathrooms is not None:
+        bathrooms_str = f"\n🚿 <b>Bathrooms:</b> {listing.bathrooms}"
+
+    toilets_str = ""
+    if listing.toilets is not None:
+        toilets_str = f"\n🚽 <b>Toilets:</b> {listing.toilets}"
 
     agent_str = ""
     if listing.agent_name:
@@ -95,6 +127,7 @@ def format_listing_alert(listing: Listing) -> str:
         f"{agent_str}\n\n"
         f"<i>📡 via {listing.source.replace('_', ' ').title()}</i>"
     )
+
 
 
 def format_settings_summary(subscriber: object) -> str:

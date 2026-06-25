@@ -16,13 +16,22 @@ from app.config import get_settings
 
 settings = get_settings()
 
+is_sqlite = settings.database_url.startswith("sqlite")
+engine_kwargs = {
+    "echo": settings.debug,
+}
+if not is_sqlite:
+    engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20,
+    })
+
 engine = create_async_engine(
     settings.database_url,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    echo=settings.debug,
+    **engine_kwargs
 )
+
 
 AsyncSessionLocal = async_sessionmaker(
     engine,

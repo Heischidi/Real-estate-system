@@ -68,6 +68,7 @@ class ListingFilter(BaseModel):
 
     city: City | None = None
     property_type: PropertyType | None = None
+    exclude_type: PropertyType | None = None
     listing_purpose: ListingPurpose | None = None
     min_price: int | None = Field(default=None, ge=0)
     max_price: int | None = Field(default=None, ge=0)
@@ -75,6 +76,7 @@ class ListingFilter(BaseModel):
     location_keyword: str | None = None  # secondary filter: city name must appear in location text
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=1000)
+
 
 
 class PaginatedListings(BaseModel):

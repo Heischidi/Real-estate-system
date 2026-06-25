@@ -31,6 +31,8 @@ class PropertyType(str, PyEnum):
     TERRACE = "terrace"
     LAND = "land"
     COMMERCIAL = "commercial"
+    CAR = "car"
+
 
 
 class ListingPurpose(str, PyEnum):
