@@ -11,12 +11,20 @@ from telegram.ext import (
 )
 
 from app.database import AsyncSessionLocal
+from app.killswitch import SYSTEM_PAUSED, LICENSE_EXPIRED_MSG
 from app.schemas.payment import PaymentCreate
 from app.services.payment_service import PaymentService
 
 PAYMENT_PLAN, PAYMENT_CONFIRM = range(2)
 
 async def start_payment_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if SYSTEM_PAUSED:
+        if update.callback_query:
+            await update.callback_query.answer()
+            await update.callback_query.message.reply_html(LICENSE_EXPIRED_MSG)
+        else:
+            await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return ConversationHandler.END
     keyboard = [
         [InlineKeyboardButton("Monthly Plan - $2 (₦3,000)", callback_data="pay_monthly_2_3000")],
         [InlineKeyboardButton("Yearly Plan - $20 (₦30,000)", callback_data="pay_yearly_20_30000")],

@@ -8,6 +8,8 @@ from __future__ import annotations
 import html
 import re
 
+from app.killswitch import SYSTEM_PAUSED, LICENSE_EXPIRED_MSG
+
 from telegram import Update
 from telegram.ext import (
     CallbackQueryHandler,
@@ -133,6 +135,9 @@ def _parse_budget(text: str) -> int | None:
 # ── Step 1 — /start ───────────────────────────────────────────────────────────
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start — sends a personalised welcome with the category selector."""
+    if SYSTEM_PAUSED:
+        await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return
     from app.bot.middleware import enforce_community_membership
     if not await enforce_community_membership(update, context):
         return
@@ -157,6 +162,9 @@ async def start_category_callback(update: Update, context: ContextTypes.DEFAULT_
     """Category button tapped — store category, ask city or skip to purpose."""
     query = update.callback_query
     await query.answer()
+    if SYSTEM_PAUSED:
+        await query.edit_message_text(LICENSE_EXPIRED_MSG, parse_mode="HTML")
+        return ConversationHandler.END
     category = (query.data or "").replace("category:", "")
     context.user_data[_KEY_CATEGORY] = category  # type: ignore[index]
 
@@ -185,6 +193,9 @@ async def back_to_categories_callback_handler(
     """Back to categories tapped."""
     query = update.callback_query
     await query.answer()
+    if SYSTEM_PAUSED:
+        await query.edit_message_text(LICENSE_EXPIRED_MSG, parse_mode="HTML")
+        return ConversationHandler.END
 
     user = update.effective_user
     first_name = user.first_name if user and user.first_name else "there"
@@ -524,11 +535,17 @@ async def back_to_cities_callback_handler(
 # ── Static command handlers ───────────────────────────────────────────────────
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /help command."""
+    if SYSTEM_PAUSED:
+        await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return
     await update.message.reply_html(HELP_MESSAGE)
 
 
 async def cities_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /cities command."""
+    if SYSTEM_PAUSED:
+        await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return
     await update.message.reply_html(CITIES_MESSAGE)
 
 
@@ -536,6 +553,9 @@ async def check_membership_callback_handler(update: Update, context: ContextType
     """Handle I Have Joined button click."""
     query = update.callback_query
     await query.answer()
+    if SYSTEM_PAUSED:
+        await query.edit_message_text(LICENSE_EXPIRED_MSG, parse_mode="HTML")
+        return
 
     from app.bot.middleware import enforce_community_membership
     if await enforce_community_membership(update, context):

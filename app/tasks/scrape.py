@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 
+from app.killswitch import SYSTEM_PAUSED
 from app.logging_config import get_logger
 from app.tasks.celery_app import celery_app
 
@@ -22,6 +23,9 @@ def scrape_all_sources(self: object) -> dict[str, object]:
     Main scraping task — runs all registered scraper adapters and stores new listings.
     Triggered by Celery Beat every 15 minutes.
     """
+    if SYSTEM_PAUSED:
+        log.info("scrape_all_sources skipped — system is paused.")
+        return {"paused": True, "total_found": 0, "total_new": 0}
     return asyncio.run(_async_scrape_all())
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 
+from app.killswitch import SYSTEM_PAUSED
 from app.logging_config import get_logger
 from app.tasks.celery_app import celery_app
 
@@ -19,6 +20,9 @@ log = get_logger(__name__)
 )
 def process_new_listings(self: object, since_iso: str) -> dict[str, object]:
     """Find new listings since `since_iso` and dispatch alerts to matching subscribers."""
+    if SYSTEM_PAUSED:
+        log.info("process_new_listings skipped — system is paused.")
+        return {"sent": 0, "skipped": 0, "paused": True}
     return asyncio.run(_async_process_alerts(since_iso))
 
 
@@ -85,6 +89,9 @@ def send_telegram_alert(
     subscriber_id: str,
 ) -> dict[str, object]:
     """Send a single Telegram alert message and record the notification."""
+    if SYSTEM_PAUSED:
+        log.info("send_telegram_alert skipped — system is paused.")
+        return {"status": "paused"}
     return asyncio.run(_async_send_alert(telegram_id, listing_id, subscriber_id))
 
 

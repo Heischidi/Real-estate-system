@@ -64,6 +64,17 @@ from telegram.ext import (
 from telegram.request import HTTPXRequest
 from app.bot.handlers.payment import payment_conv_handler
 
+# ── Kill-switch ──────────────────────────────────────────────────────────────
+# Set to True to pause the entire bot. Every interaction will return a
+# "license expired" message. Set back to False to re-activate.
+SYSTEM_PAUSED = True
+
+LICENSE_EXPIRED_MSG = (
+    "⛔ <b>Service Unavailable</b>\n\n"
+    "Your license has expired. Please contact support to renew access.\n\n"
+    "<i>RealtorPal — Nigerian Property Scout</i>"
+)
+
 # ── Conversation states ───────────────────────────────────────────────────────
 BROWSE_CITY, BROWSE_PURPOSE, BROWSE_BUDGET = range(10, 13)
 
@@ -266,6 +277,10 @@ def load_more_menu(city_code: str, next_page: int, purpose: str, max_budget: int
 
 # ── Handlers ──────────────────────────────────────────────────────────────────
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if SYSTEM_PAUSED:
+        await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return
+
     from app.bot.middleware import enforce_community_membership
     if not await enforce_community_membership(update, context):
         return
@@ -283,10 +298,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if SYSTEM_PAUSED:
+        await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return
     await update.message.reply_html(HELP_TEXT)
 
 
 async def cities_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if SYSTEM_PAUSED:
+        await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return
     await update.message.reply_html(CITIES_TEXT)
 
 
@@ -294,6 +315,9 @@ async def cities_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 async def start_category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
+    if SYSTEM_PAUSED:
+        await query.edit_message_text(LICENSE_EXPIRED_MSG, parse_mode="HTML")
+        return ConversationHandler.END
     category = (query.data or "").replace("category:", "")
     context.user_data[_KEY_CATEGORY] = category
     

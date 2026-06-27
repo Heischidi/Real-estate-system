@@ -5,6 +5,7 @@ from __future__ import annotations
 from telegram import Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
+from app.killswitch import SYSTEM_PAUSED, LICENSE_EXPIRED_MSG
 from app.logging_config import get_logger
 
 log = get_logger(__name__)
@@ -12,6 +13,9 @@ log = get_logger(__name__)
 
 async def my_settings_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /mysettings command."""
+    if SYSTEM_PAUSED:
+        await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return
     user = update.effective_user
     if not user:
         return
@@ -36,6 +40,9 @@ async def my_settings_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def unsubscribe_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /unsubscribe command."""
+    if SYSTEM_PAUSED:
+        await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return
     user = update.effective_user
     if not user:
         return

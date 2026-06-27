@@ -5,9 +5,23 @@ from __future__ import annotations
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.killswitch import SYSTEM_PAUSED, LICENSE_EXPIRED_API
 from app.services.auth_service import decode_access_token
 
 bearer_scheme = HTTPBearer()
+
+
+async def check_system_active() -> None:
+    """
+    Global FastAPI dependency. Raises HTTP 503 for every request
+    when SYSTEM_PAUSED is True. Attach to the root api_router so
+    every endpoint is blocked automatically.
+    """
+    if SYSTEM_PAUSED:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=LICENSE_EXPIRED_API["detail"],
+        )
 
 
 async def get_current_admin(

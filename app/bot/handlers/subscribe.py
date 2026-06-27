@@ -13,6 +13,7 @@ from telegram.ext import (
 )
 
 from app.bot.keyboards import city_keyboard, confirm_keyboard, property_type_keyboard
+from app.killswitch import SYSTEM_PAUSED, LICENSE_EXPIRED_MSG
 from app.logging_config import get_logger
 
 log = get_logger(__name__)
@@ -30,6 +31,13 @@ KEY_MAX = "sub_max"
 async def subscribe_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Entry point — ask user to select city."""
     query = update.callback_query
+    if SYSTEM_PAUSED:
+        if query:
+            await query.answer()
+            await query.edit_message_text(LICENSE_EXPIRED_MSG, parse_mode="HTML")
+        else:
+            await update.message.reply_html(LICENSE_EXPIRED_MSG)
+        return ConversationHandler.END
     if query:
         await query.answer()
         await query.edit_message_text(

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.api.deps import check_system_active
 from app.api.routes import (
     admin_ui,
     auth,
@@ -15,7 +16,7 @@ from app.api.routes import (
     subscribers,
 )
 
-api_router = APIRouter()
+api_router = APIRouter(dependencies=[Depends(check_system_active)])
 
 api_router.include_router(health.router)
 api_router.include_router(auth.router)
